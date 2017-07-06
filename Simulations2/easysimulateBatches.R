@@ -21,14 +21,10 @@ samples1[,1] <- rnorm(n=N,mean=xmus[components],sd=xsds[components])
 samples1[,2] <- rnorm(n=N,mean=ymus[components],sd=ysds[components])
 
 ########### Get the true cluter labels for batch 1
-source('batchpartitions.R')
-set.seed(10)
-parts<-  batchpartitions(t(samples1),nclusters=4)  
-clust1<-vector()
-clust1[parts$part1]<-"dark green"#2
-clust1[parts$part2]<-"blue"#1
-clust1[parts$part3]<-"blue"#3
-clust1[parts$part4]<-"brown1"#3
+clust1<-components
+clust1[components==1]<-"blue"
+clust1[components==2]<-"brown1"
+clust1[components==3]<-"dark green"
 par(mfrow=c(1,1))
 plot(samples1, pch=16,cex=1.5,col=(clust1))
 
@@ -57,14 +53,12 @@ samples2[,1] <- rnorm(n=N,mean=xmus[components],sd=xsds[components])
 samples2[,2] <- rnorm(n=N,mean=ymus[components],sd=ysds[components])
 
 ########################### Get the true cluter labels for batch 2
-set.seed(10)
-parts<-  batchpartitions(t(samples2),nclusters=5)  
-clust2<-vector()
-clust2[parts$part1]<-"blue"#3
-clust2[parts$part2]<-"dark green"#2
-clust2[parts$part3]<-"brown1"#1
-clust2[parts$part4]<-"blue"#3
-clust2[parts$part5]<-"dark green"#2
+clust2<-components
+clust2[components==1]<-"blue"
+clust2[components==2]<-"brown1"
+clust2[components==3]<-"dark green"
+
+par(mfrow=c(1,1))
 plot(samples2, pch=16,cex=1.5,col=(clust2))
 ############ Projection to D dimensional space
 
@@ -81,5 +75,5 @@ colnames(A2)<-c(1:D)
 B2<-as.data.frame(t(A2))
 B1<-as.data.frame(t(A1))
 
-#save(file="easySim.RData",B1,B2,clust1,clust2)
+save(file="easySim.RData",B1,B2,clust1,clust2)
 
