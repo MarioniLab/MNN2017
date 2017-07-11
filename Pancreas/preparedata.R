@@ -5,21 +5,21 @@ this.dir <- dirname(parent.frame(2)$ofile)
 setwd(this.dir)
 
 ##read data files
-datah1<-read.table("CELseq/GSE81076-norm.tsv",sep="\t",stringsAsFactors = F, head=T)
-datah2<-read.table("CELseq/GSE85241-norm.tsv",sep="\t",stringsAsFactors = F, head=T)
-datah3<-read.table("Smartseq2/E-MTAB-5061-norm.tsv",sep="\t",stringsAsFactors = F, head=T)
-datah4<-read.table("Smartseq2/GSE86473-norm.tsv",sep="\t",stringsAsFactors = F, head=T)
+datah1<-read.table("ftp.cruk.cam.ac.uk/CELseq/GSE81076-norm.tsv.gz",sep="\t",stringsAsFactors = F, head=T)
+datah2<-read.table("ftp.cruk.cam.ac.uk/CELseq/GSE85241-norm.tsv.gz",sep="\t",stringsAsFactors = F, head=T)
+datah3<-read.table("ftp.cruk.cam.ac.uk/Smartseq2/E-MTAB-5061-norm.tsv.gz",sep="\t",stringsAsFactors = F, head=T)
+datah4<-read.table("ftp.cruk.cam.ac.uk/Smartseq2/GSE86473-norm.tsv.gz",sep="\t",stringsAsFactors = F, head=T)
 
-HVG1<-read.table("CELseq/GSE81076-HVG.tsv")
-HVG2<-read.table("CELseq/GSE85241-HVG.tsv")
-HVG3<-read.table("Smartseq2/E-MTAB-5061-HVG.tsv")
-HVG4<-read.table("Smartseq2/GSE86473-HVG.tsv")
+HVG1<-read.table("ftp.cruk.cam.ac.uk/CELseq/GSE81076-HVG.tsv")
+HVG2<-read.table("ftp.cruk.cam.ac.uk/CELseq/GSE85241-HVG.tsv")
+HVG3<-read.table("ftp.cruk.cam.ac.uk/Smartseq2/E-MTAB-5061-HVG.tsv")
+HVG4<-read.table("ftp.cruk.cam.ac.uk/Smartseq2/GSE86473-HVG.tsv")
 
 
-meta1<-read.table("CELseq/GSE81076_marker_metadata.tsv",sep="\t",stringsAsFactors = F, head=T)
-meta2<-read.table("CELseq/GSE85241_marker_metadata.tsv",sep="\t",stringsAsFactors = F, head=T)
-meta3<-read.table("Smartseq2/E-MTAB-5061_marker_metadata.tsv",sep="\t",stringsAsFactors = F, head=T)
-meta4<-read.table("Smartseq2/GSE86473_marker_metadata.tsv",sep="\t",stringsAsFactors = F, head=T)
+meta1<-read.table("ftp.cruk.cam.ac.uk/CELseq/GSE81076_marker_metadata.tsv",sep="\t",stringsAsFactors = F, head=T)
+meta2<-read.table("ftp.cruk.cam.ac.uk/CELseq/GSE85241_marker_metadata.tsv",sep="\t",stringsAsFactors = F, head=T)
+meta3<-read.table("ftp.cruk.cam.ac.uk/Smartseq2/E-MTAB-5061_marker_metadata.tsv",sep="\t",stringsAsFactors = F, head=T)
+meta4<-read.table("ftp.cruk.cam.ac.uk/Smartseq2/GSE86473_marker_metadata.tsv",sep="\t",stringsAsFactors = F, head=T)
 
 #gene names
 genes1<-as.character(datah1[,1190]) #last columns is the genes name
