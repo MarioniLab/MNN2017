@@ -1,106 +1,127 @@
-#Read pancreas data and meta data and set of highly variable genes + preprocessing of data befor batch correction; match gene names accross data sets.  
-require(WGCNA)
-
+# Read pancreas data and meta data and set of highly variable genes + preprocessing of data befor batch correction; match gene names accross data sets.  
 this.dir <- dirname(parent.frame(2)$ofile)
 setwd(this.dir)
 
-##read data files
-datah1<-read.table("ftp.cruk.cam.ac.uk/CELseq/GSE81076-norm.tsv.gz",sep="\t",stringsAsFactors = F, head=T)
-datah2<-read.table("ftp.cruk.cam.ac.uk/CELseq/GSE85241-norm.tsv.gz",sep="\t",stringsAsFactors = F, head=T)
-datah3<-read.table("ftp.cruk.cam.ac.uk/Smartseq2/E-MTAB-5061-norm.tsv.gz",sep="\t",stringsAsFactors = F, head=T)
-datah4<-read.table("ftp.cruk.cam.ac.uk/Smartseq2/GSE86473-norm.tsv.gz",sep="\t",stringsAsFactors = F, head=T)
+## read data files
+datah1 <- read.table("../ftp2.cruk.cam.ac.uk/CELseq/GSE81076-norm.tsv.gz", sep="\t", stringsAsFactors=FALSE, head=TRUE)
+datah2 <- read.table("../ftp2.cruk.cam.ac.uk/CELseq/GSE85241-norm.tsv.gz", sep="\t", stringsAsFactors=FALSE, head=TRUE)
+datah3 <- read.table("../ftp2.cruk.cam.ac.uk/Smartseq2/E-MTAB-5061-norm.tsv.gz", sep="\t", stringsAsFactors=FALSE, head=TRUE)
+datah4 <- read.table("../ftp2.cruk.cam.ac.uk/Smartseq2/GSE86473-norm.tsv.gz", sep="\t", stringsAsFactors=FALSE, head=TRUE)
 
-HVG1<-read.table("ftp.cruk.cam.ac.uk/CELseq/GSE81076-HVG.tsv")
-HVG2<-read.table("ftp.cruk.cam.ac.uk/CELseq/GSE85241-HVG.tsv")
-HVG3<-read.table("ftp.cruk.cam.ac.uk/Smartseq2/E-MTAB-5061-HVG.tsv")
-HVG4<-read.table("ftp.cruk.cam.ac.uk/Smartseq2/GSE86473-HVG.tsv")
+HVG1<-read.table("../ftp2.cruk.cam.ac.uk/CELseq/GSE81076-HVG.tsv")
+HVG2<-read.table("../ftp2.cruk.cam.ac.uk/CELseq/GSE85241-HVG.tsv")
+HVG3<-read.table("../ftp2.cruk.cam.ac.uk/Smartseq2/E-MTAB-5061-HVG.tsv")
+HVG4<-read.table("../ftp2.cruk.cam.ac.uk/Smartseq2/GSE86473-HVG.tsv")
 
 
-meta1<-read.table("ftp.cruk.cam.ac.uk/CELseq/GSE81076_marker_metadata.tsv",sep="\t",stringsAsFactors = F, head=T)
-meta2<-read.table("ftp.cruk.cam.ac.uk/CELseq/GSE85241_marker_metadata.tsv",sep="\t",stringsAsFactors = F, head=T)
-meta3<-read.table("ftp.cruk.cam.ac.uk/Smartseq2/E-MTAB-5061_marker_metadata.tsv",sep="\t",stringsAsFactors = F, head=T)
-meta4<-read.table("ftp.cruk.cam.ac.uk/Smartseq2/GSE86473_marker_metadata.tsv",sep="\t",stringsAsFactors = F, head=T)
+meta1<-read.table("../ftp2.cruk.cam.ac.uk/CELseq/GSE81076_marker_metadata.tsv", sep="\t", stringsAsFactors = FALSE, head=TRUE)
+meta2<-read.table("../ftp2.cruk.cam.ac.uk/CELseq/GSE85241_marker_metadata.tsv", sep="\t", stringsAsFactors = FALSE, head=TRUE)
+meta3<-read.table("../ftp2.cruk.cam.ac.uk/Smartseq2/E-MTAB-5061_marker_metadata.tsv", sep="\t", stringsAsFactors = FALSE, head=TRUE)
+meta4<-read.table("../ftp2.cruk.cam.ac.uk/Smartseq2/GSE86473_marker_metadata.tsv", sep="\t", stringsAsFactors = FALSE, head=TRUE)
 
-#gene names
-genes1<-as.character(datah1[,1190]) #last columns is the genes name
-duplrows<-which(duplicated(genes1))
-datah1<-datah1[,-1190]
-row.names(datah1)<-genes1
+# subset metadata to include cells for which data are available, i.e. passed QC, keep gene ID column
+datah1 <- datah1[, c(intersect(colnames(datah1), meta1$Sample), "gene_id")]
+datah2 <- datah2[, c(intersect(colnames(datah2), meta2$Sample), "gene_id")]
+datah3 <- datah3[, c(intersect(colnames(datah3), meta3$Sample), "hgnc_symbol")]
+datah4 <- datah4[, c(intersect(colnames(datah4), meta4$Sample), "hgnc_symbol")]
 
-genes2<-as.character(datah2[,2406]) #last columns is the genes name
-datah2<-datah2[,-2406]
-datah2<-datah2[,-1]  # column1 does not have celltype label
-row.names(datah2)<-genes2
+# gene names
+# last columns is the genes name
+genes1 <- as.character(datah1[, dim(datah1)[2]])
+duplrows <- which(duplicated(genes1))
+datah1 <- datah1[, -dim(datah1)[2]]
+row.names(datah1) <- genes1
 
-genes3<-as.character(datah3[,2189]) #last columns is the genes name
-datah3<-datah3[,-2189]
-row.names(datah3)<-genes3
+# last columns is the genes name
+genes2 <- as.character(datah2[, dim(datah2)[2]])
+datah2 <- datah2[, -dim(datah2)[2]]
+datah2 <- datah2[, -1]  # column1 does not have celltype label
+row.names(datah2) <- genes2
 
-genes4<-as.character(datah4[,1451]) #last columns is the genes name
-datah4<-datah4[,-1451]
-row.names(datah4)<-genes4
+# last columns is the genes name
+genes3 <- as.character(datah3[, dim(datah3)[2]])
+datah3 <- datah3[, -dim(datah3)[2]]
+row.names(datah3) <- genes3
 
-############process cell type labels
+# last columns is the genes name
+genes4 <- as.character(datah4[, dim(datah4)[2]])
+datah4 <- datah4[, -dim(datah4)[2]]
+row.names(datah4) <- genes4
 
-celltype1<- vector("character", length = dim(datah1)[2])
+############ process cell type labels
+
+celltype1 <- vector("character", length=dim(datah1)[2])
 for (i in 1:dim(datah1)[2]) {
-  ci<-which(meta1$Sample==colnames(datah1)[i])
-  celltype1[i] <-substr( tolower(meta1$CellType[ci]),start = 1,stop = 4)
+  ci <- which(meta1$Sample==colnames(datah1)[i])
+  celltype1[i] <- substr(tolower(meta1$CellType[ci]), start=1, stop=4)
 }
-celltype2<- vector("character", length = dim(datah2)[2])
+
+celltype2 <- vector("character", length=dim(datah2)[2])
 for (i in 1:dim(datah2)[2]) {
-  ci<-which(meta2$Sample==colnames(datah2)[i])
-  celltype2[i] <-substr( tolower(meta2$CellType[ci]),start = 1,stop = 4)
+  ci <- which(meta2$Sample == colnames(datah2)[i])
+  celltype2[i] <- substr(tolower(meta2$CellType[ci]), start=1, stop=4)
 }
 
-celltype3<- vector("character", length = dim(datah3)[2])
+celltype3 <- vector("character", length=dim(datah3)[2])
 for (i in 1:dim(datah3)[2]) {
-  ci<-which(meta3$Sample==colnames(datah3)[i])
-  celltype3[i] <-substr( tolower(meta3$CellType[ci]),start = 1,stop = 4)
+  ci <- which(meta3$Sample == colnames(datah3)[i])
+  celltype3[i] <- substr(tolower(meta3$CellType[ci]), start=1, stop=4)
 }
 
-celltype4<- vector("character", length = dim(datah4)[2])
+celltype4 <- vector("character", length=dim(datah4)[2])
 for (i in 1:dim(datah4)[2]) {
-  ci<-which(meta4$Sample==colnames(datah4)[i])
-  celltype4[i] <-substr( tolower(meta4$CellType[ci]),start = 1,stop = 4)
+  ci <- which(meta4$Sample == colnames(datah4)[i])
+  celltype4[i] <- substr(tolower(meta4$CellType[ci]), start=1, stop=4)
 }
-###prepare batches with identical row names (matched gene names) 
-inquiry_genes<- intersect(genes1,intersect(genes2,intersect(genes3,genes4)))
-datah1<-datah1[inquiry_genes,]
-datah2<-datah2[inquiry_genes,]
-datah3<-datah3[inquiry_genes,]
-datah4<-datah4[inquiry_genes,]
-###find of set of highly variable gene names which are present in all data sets 
-HVG<-unique(c(as.character(unlist(HVG1)),as.character(unlist(HVG2)),as.character(unlist(HVG3)),as.character(unlist(HVG4)))) #union of highly variable genes
-common_genes<- intersect(genes1,intersect(genes2,intersect(genes3,intersect(HVG,genes4))))
-hvg_genes<-common_genes
+### prepare batches with identical row names (matched gene names) 
+inquiry_genes <- intersect(genes1, intersect(genes2, intersect(genes3, genes4)))
+datah1 <- datah1[inquiry_genes, ]
+datah2 <- datah2[inquiry_genes, ]
+datah3 <- datah3[inquiry_genes, ]
+datah4 <- datah4[inquiry_genes, ]
 
-##further cleaning
-badcol<-which(celltype2=="")
-if (length(badcol)>0){
-datah2<-datah2[,-badcol] #datah2 has a nonlabled column
-celltype2<-celltype2[-badcol]
-}
+### find of set of highly variable gene names which are present in all data sets 
+#union of highly variable genes
+HVG <- unique(c(as.character(unlist(HVG1)),
+		as.character(unlist(HVG2)),
+		as.character(unlist(HVG3)),
+		as.character(unlist(HVG4))))
 
-narow<-which(is.na(datah1[,2])) #there was a narow!
-if (length(narow) >0) {
-  datah1<-datah1[-narow,]
-}
+common_genes <- intersect(genes1, intersect(genes2, intersect(genes3, intersect(HVG, genes4))))
+hvg_genes <- common_genes
 
-narow<-which(is.na(datah2[,2])) #there was a narow!
-if (length(narow) >0) {
-  datah2<-datah2[-narow,]
+## further cleaning
+# remove cells with no cell label
+badcol <- which(celltype2 == "")
+if (length(badcol) > 0){
+datah2 <- datah2[, -badcol] #datah2 has a nonlabled column
+celltype2 <- celltype2[-badcol]
 }
 
-narow<-which(is.na(datah3[,2])) #there was a narow!
-if (length(narow) >0) {
-  datah3<-datah3[-narow,]
+# remove NA rows
+narow <- which(is.na(datah1[, 2])) #there was a narow!
+if (length(narow) > 0) {
+  datah1 <- datah1[-narow, ]
 }
 
-narow<-which(is.na(datah4[,2])) #there was a narow!
-if (length(narow) >0) {
-  datah4<-datah4[-narow,]
+narow <- which(is.na(datah2[, 2])) #there was a narow!
+if (length(narow) > 0) {
+  datah2 <- datah2[-narow, ]
+}
+
+narow <- which(is.na(datah3[, 2])) #there was a narow!
+if (length(narow) > 0) {
+  datah3 <- datah3[-narow, ]
+}
+
+narow <- which(is.na(datah4[, 2])) #there was a narow!
+if (length(narow) > 0) {
+  datah4 <- datah4[-narow,]
 }
 ########
-save(datah1, datah2,datah3,datah4,celltype1,celltype2,celltype3,celltype4,inquiry_genes,hvg_genes,file="raw_complete4DataSets.RData")
 
+# write out batch corrected files out for clustering, differential expression testing and other downstream analyses
+save(datah1, datah2, datah3, datah4,
+	     celltype1, celltype2, celltype3, celltype4,
+	     inquiry_genes, hvg_genes,
+	     file="raw_complete4DataSets.RData")

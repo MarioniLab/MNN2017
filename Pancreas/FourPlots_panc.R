@@ -3,59 +3,63 @@ this.dir <- dirname(parent.frame(2)$ofile)
 setwd(this.dir)
 
 load("raw_complete4DataSets.RData") #load the output of "preparedata.R"
-setwd(paste0(this.dir,"/results"))
+
+# need to create 'results' directory
+dir.create(paste0(this.dir, "/results"))
+setwd(paste0(this.dir, "/results"))
 require(WGCNA)
 library(scales)
 library(scran)
 
 
 ######uncorrected data
-raw.all<-cbind(datah4,datah3,datah2,datah1)
-colnames(raw.all)<-c(rep(4,dim(datah4)[2]),rep(3,dim(datah3)[2]),rep(2,dim(datah2)[2]),rep(1,dim(datah1)[2]))
+raw.all <- cbind(datah4, datah3, datah2, datah1)
+colnames(raw.all) <- c(rep(4, dim(datah4)[2]), rep(3, dim(datah3)[2]), rep(2, dim(datah2)[2]), rep(1, dim(datah1)[2]))
 
 ###### sample 1000 cells from each batch for t-SNE plotting 
- set.seed(2)
- samples1<-sample(1:dim(datah1)[2],1000) 
- samples2<-sample(1:dim(datah2)[2],1000)
- samples3<-sample(1:dim(datah3)[2],1000)
- samples4<-sample(1:dim(datah4)[2],1000)
- allsamples<-c(samples4, dim(datah4)[2]+samples3, dim(datah4)[2]+dim(datah3)[2]+samples2, dim(datah4)[2]+dim(datah3)[2]+dim(datah2)[2]+samples1)
+set.seed(2)
+samples1 <- sample(1:dim(datah1)[2], 1000) 
+samples2 <- sample(1:dim(datah2)[2], 1000)
+samples3 <- sample(1:dim(datah3)[2], 1000)
+samples4 <- sample(1:dim(datah4)[2], 1000)
+allsamples <- c(samples4, dim(datah4)[2]+samples3, dim(datah4)[2] + dim(datah3)[2] + samples2,
+	   dim(datah4)[2] + dim(datah3)[2] + dim(datah2)[2] + samples1)
+
 ######## tidy cell type
+celltypes <- c(celltype4, celltype3, celltype2, celltype1)
+celltypes[celltypes == "pp"] <- "other"
+celltypes[celltypes == "mese"] <- "delt"
+celltypes[celltypes == "co-e"] <- "other"
+celltypes[celltypes == "endo"] <- "other"
+celltypes[celltypes == "epsi"] <- "other"
+celltypes[celltypes == "mast"] <- "other"
+celltypes[celltypes == "mhc "] <- "other"
+celltypes[celltypes == "uncl"] <- "other"
+celltypes[celltypes == "psc "] <- "other"
 
-celltypes<-c(celltype4,celltype3,celltype2,celltype1)
-celltypes[celltypes=="pp"]="other"
-celltypes[celltypes=="mese"]="delt"
-celltypes[celltypes=="co-e"]="other"
-celltypes[celltypes=="endo"]="other"
-celltypes[celltypes=="epsi"]="other"
-celltypes[celltypes=="mast"]="other"
-celltypes[celltypes=="mhc "]="other"
-celltypes[celltypes=="uncl"]="other"
-celltypes[celltypes=="psc "]="other"
+celltypes[celltypes == "alph"] <- "alpha"
+celltypes[celltypes == "delt"] <- "delta"
+celltypes[celltypes == "gamm"] <- "gamma"
+celltypes[celltypes == "psc "] <- "other"
 
-celltypes[celltypes=="alph"]="alpha"
-celltypes[celltypes=="delt"]="delta"
-celltypes[celltypes=="gamm"]="gamma"
-celltypes[celltypes=="psc "]="other"
+##### set cell type colorings
+allcolors <- labels2colors(celltypes[allsamples])
+allcolors[allcolors == "red"] <- "deeppink"
+allcolors[allcolors == "yellow"] <- "orange1" # "darkgoldenrod1"
 
-#####set cell type colorings
-allcolors<-labels2colors(celltypes[allsamples])
-allcolors[allcolors=="red"]<-"deeppink"
-allcolors[allcolors=="yellow"]<-"orange1"#"darkgoldenrod1"
-
-N<-c(1000,2000,3000,4000)
+N <- c(1000, 2000, 3000, 4000)
 
 # N<-c(length(celltype2),length(celltype2)+length(celltype3),
 #      length(celltype2)+length(celltype3)+length(celltype4),
 #      length(celltype2)+length(celltype3)+length(celltype4)+length(celltype1))
 
 #### Uncorrected data 
-all.dists2.unc <- as.matrix(dist(t(raw.all[hvg_genes,allsamples])))
+all.dists2.unc <- as.matrix(dist(t(raw.all[hvg_genes, allsamples])))
 require(Rtsne)
-par(mfrow=c(1,1))
+par(mfrow=c(1, 1))
 
 set.seed(0)
-tsne.unc<-Rtsne(all.dists2.unc, is_distance=TRUE)#, perplexity = 5)
+tsne.unc <- Rtsne(all.dists2.unc, is_distance=TRUE)#, perplexity = 5)
 
 png(file="unc4321.png",width=900,height=700)
 par(mfrow=c(1,1),mar=c(6,6,4,2),cex.axis=2,cex.main=3,cex.lab=2.5)
