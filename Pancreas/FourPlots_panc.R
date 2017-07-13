@@ -5,8 +5,8 @@ setwd(this.dir)
 load("raw_complete4DataSets.RData") #load the output of "preparedata.R"
 
 # need to create 'results' directory
-dir.create(paste0(this.dir, "/results"))
-setwd(paste0(this.dir, "/results"))
+#dir.create(paste0(this.dir, "/results"))
+setwd("results")
 require(WGCNA)
 library(scales)
 library(scran)
@@ -105,33 +105,42 @@ points(tsne.lm$Y[(N[2]+1):N[3],1],tsne.lm$Y[(N[2]+1):N[3],2], pch=1,cex=4,col=al
 points(tsne.lm$Y[(N[3]+1):N[4],1],tsne.lm$Y[(N[3]+1):N[4],2], pch=4,cex=4,col=alpha(allcolors[(N[3]+1):N[4]],0.6))
 dev.off()
 
-####ComBat correction
+#### ComBat correction
 library(sva)
 
 Z <- colnames(raw.all)
 cleandat.combat <- ComBat(raw.all,Z,mod=NULL,prior.plots = FALSE)
 
-all.dists.combat <- as.matrix(dist(t(cleandat.combat[hvg_genes,allsamples])))
+all.dists.combat <- as.matrix(dist(t(cleandat.combat[hvg_genes, allsamples])))
 set.seed(0)
-tsne.combat<-Rtsne(all.dists.combat, is_distance=TRUE)
+tsne.combat <- Rtsne(all.dists.combat, is_distance=TRUE)
 
-png(file="combat4321.png",width=900,height=700)
-par(mfrow=c(1,1),mar=c(6,6,4,2),cex.axis=2,cex.main=3,cex.lab=2.5)
-plot(tsne.combat$Y[1:N[1],1],tsne.combat$Y[1:N[1],2], pch=3,cex=4,col=alpha(allcolors[1:N[1]],0.6),main="ComBat corrected",xlim=c(-12,15),ylim=c(-10,10),xlab="tSNE 1",ylab="tSNE 2")
-points(tsne.combat$Y[(N[1]+1):N[2],1],tsne.combat$Y[(N[1]+1):N[2],2], pch=18,cex=4,col=alpha(allcolors[(N[1]+1):N[2]],0.6))
-points(tsne.combat$Y[(N[2]+1):N[3],1],tsne.combat$Y[(N[2]+1):N[3],2], pch=1,cex=4,col=alpha(allcolors[(N[2]+1):N[3]],0.6))
-points(tsne.combat$Y[(N[3]+1):N[4],1],tsne.combat$Y[(N[3]+1):N[4],2], pch=4,cex=4,col=alpha(allcolors[(N[3]+1):N[4]],0.6))
-#plot(tsne.combat$Y[,1],tsne.combat$Y[,2], pch=16,col=labels2colors(celltypes),main="ComBat corrected")
+png(file="combat4321.png", width=900,height=700)
+par(mfrow=c(1,1), mar=c(6,6,4,2), cex.axis=2, cex.main=3, cex.lab=2.5)
+plot(tsne.combat$Y[1:N[1], 1], 
+			   tsne.combat$Y[1:N[1],2], pch=3, cex=4, 
+			   col=alpha(allcolors[1:N[1]],0.6), 
+			   main="ComBat corrected", xlim=c(-12,15), ylim=c(-10,10),
+			   xlab="tSNE 1", ylab="tSNE 2")
+points(tsne.combat$Y[(N[1]+1):N[2],1], tsne.combat$Y[(N[1]+1):N[2],2],
+				       pch=18, cex=4, col=alpha(allcolors[(N[1]+1):N[2]], 0.6))
+points(tsne.combat$Y[(N[2]+1):N[3],1], tsne.combat$Y[(N[2]+1):N[3],2],
+				       pch=1, cex=4, col=alpha(allcolors[(N[2]+1):N[3]], 0.6))
+points(tsne.combat$Y[(N[3]+1):N[4],1], tsne.combat$Y[(N[3]+1):N[4],2],
+				       pch=4, cex=4, col=alpha(allcolors[(N[3]+1):N[4]], 0.6))
+#plot(tsne.combat$Y[,1],tsne.combat$Y[,2], pch=16, col=labels2colors(celltypes), main="ComBat corrected")
 dev.off()
 
-###save results
-save(file="completedata_correcteds.RData", raw.all, Xmnn,Xlm,cleandat.combat,allsamples,celltypes)
+### save results
+save(file="completedata_correcteds.RData", raw.all, Xmnn,
+					   Xlm, cleandat.combat, allsamples, celltypes)
 ###### the legend
-png(file="leg_detailed4321.png",width=900,height=700)
-par(mfrow=c(1,1),mar=c(6,6,4,2),cex.axis=2,cex.main=3,cex.lab=2.5)
-plot(1,2, pch=3,cex=4,col=alpha(allcolors[1],0.6),main="legend",xlim=c(-20,30),ylim=c(-13,13),xlab="tSNE 1",ylab="tSNE 2")
-forleg<-table(celltypes,allcolors)
-leg.txt<-unique(celltypes[allsamples])
+png(file="leg_detailed4321.png", width=900, height=700)
+par(mfrow=c(1,1), mar=c(6,6,4,2), cex.axis=2, cex.main=3, cex.lab=2.5)
+plot(1, 2, pch=3, cex=4, col=alpha(allcolors[1],0.6),
+	main="legend", xlim=c(-20,30), ylim=c(-13,13), xlab="tSNE 1", ylab="tSNE 2")
+forleg <- table(celltypes,allcolors)
+leg.txt <- unique(celltypes[allsamples])
 legend("bottomright", "(x,y)", legend = leg.txt, col =unique(allcolors) , pch = 4,cex = 2.5,bty = "n",lwd = 3,lty=0)   #, trace = TRUE)
 legend("bottomleft", "(x,y)", legend = leg.txt, col =unique(allcolors) , pch = 1,cex = 2.5,bty = "n",lwd = 3,lty=0)   #, trace = TRUE)
 legend("topright", "(x,y)", legend = leg.txt, col =unique(allcolors) , pch = 18,cex = 2.5,bty = "n",lwd = 3,lty=0)   #, trace = TRUE)
@@ -162,7 +171,6 @@ write.table(file="C_CELLseq_GSE81076.txt", correh1, row.names=TRUE, col.names=TR
 ##########
 
 ########## compute Silhouette coefficients on t-SNE coordinates
-library(kBET)
 ct.fac <- factor(celltypes[allsamples])
 
 dd.unc <- as.matrix(dist(tsne.unc$Y)) 
@@ -184,11 +192,12 @@ sil_com<-score_sil[,3] #for ComBat corrected data
 
 
 ### boxplot of Silhouette coefficients
-sils<-cbind(sil_unc,sil_c,sil_lm,sil_com)
+sils <- cbind(sil_unc, sil_c, sil_lm, sil_com)
 
-png(file="sils_alltypes_tsnespace.png",width=900,height=700)
-par(mfrow=c(1,1),mar=c(8,8,5,3),cex.axis=3,cex.main=2,cex.lab=3)
-boxplot(sils,main="",names=c("Raw","MNN","limma","ComBat"),lwd=4,ylab="Silhouette coefficient")#,col="Yellow",ylab="Alpha dists")
+png(file="sils_alltypes_tsnespace.png", width=900, height=700)
+par(mfrow=c(1,1), mar=c(8,8,5,3), cex.axis=3, cex.main=2, cex.lab=3)
+boxplot(sils, main="", names=c("Raw", "MNN", "limma", "ComBat"),
+	      lwd=4, ylab="Silhouette coefficient")#, col="Yellow", ylab="Alpha dists")
 dev.off()
 
 ##################
