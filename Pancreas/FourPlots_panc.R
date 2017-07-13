@@ -70,13 +70,17 @@ points(tsne.unc$Y[(N[3]+1):N[4],1],tsne.unc$Y[(N[3]+1):N[4],2], pch=4,cex=4,col=
 dev.off()
 
 ### MNN batch correction
-inquiry_genes<-row.names(datah4)
-Xmnn<-mnnCorrect(datah4,datah3,datah2,datah1,inquiry.genes=inquiry_genes, hvg.genes=hvg_genes, k=20, sigma=0.1, cos.norm=TRUE,svd.dim=0)
-corre<-cbind(Xmnn$corrected[[1]],Xmnn$corrected[[2]],Xmnn$corrected[[3]],Xmnn$corrected[[4]])
+inquiry_genes <- row.names(datah4)
+Xmnn <- mnnCorrect(datah4, datah3, datah2, datah1,
+     	inquiry.genes=inquiry_genes,
+        hvg.genes=hvg_genes, k=20, sigma=0.1,
+	cos.norm=TRUE,svd.dim=0) # batch correction is throwing an error because of non-numeric values?
+
+corre <- cbind(Xmnn$corrected[[1]],Xmnn$corrected[[2]],Xmnn$corrected[[3]],Xmnn$corrected[[4]])
 all.dists2.c <- as.matrix(dist(t(corre[hvg_genes,allsamples])))
 
 set.seed(0)
-tsne.c<-Rtsne(all.dists2.c, is_distance=TRUE)#, perplexity = 5)
+tsne.c <- Rtsne(all.dists2.c, is_distance=TRUE)#, perplexity = 5)
 
 png(file="mnn4321_s.png",width=900,height=700)
 par(mfrow=c(1,1),mar=c(6,6,4,2),cex.axis=2,cex.main=3,cex.lab=2.5)
@@ -85,7 +89,8 @@ points(tsne.c$Y[(N[1]+1):N[2],1],tsne.c$Y[(N[1]+1):N[2],2], pch=18,cex=4,col=alp
 points(tsne.c$Y[(N[2]+1):N[3],1],tsne.c$Y[(N[2]+1):N[3],2], pch=1,cex=4,col=alpha(allcolors[(N[2]+1):N[3]],0.6))
 points(tsne.c$Y[(N[3]+1):N[4],1],tsne.c$Y[(N[3]+1):N[4],2], pch=4,cex=4,col=alpha(allcolors[(N[3]+1):N[4]],0.6))
 dev.off()
-###limma batch correction
+
+### limma batch correction
 library(limma)
 Xlm <- removeBatchEffect(raw.all, factor(colnames(raw.all)))
 all.dists2.lm <- as.matrix(dist(t(Xlm[hvg_genes,allsamples])))
@@ -132,36 +137,37 @@ legend("bottomleft", "(x,y)", legend = leg.txt, col =unique(allcolors) , pch = 1
 legend("topright", "(x,y)", legend = leg.txt, col =unique(allcolors) , pch = 18,cex = 2.5,bty = "n",lwd = 3,lty=0)   #, trace = TRUE)
 legend("topleft", "(x,y)", legend = leg.txt, col =unique(allcolors) , pch = 3,cex = 2.5,bty = "n",lwd = 3,lty=0)   #, trace = TRUE)
 dev.off()
+
 ##################### write.table
-# Ns<-c(ncol(datah4),ncol(datah3),ncol(datah2),ncol(datah1))
-# correh4<-corre[,1:Ns[1]]
-# correh3<-corre[,(Ns[1]+1):(Ns[1]+Ns[2])]
-# correh2<-corre[,(Ns[1]+Ns[2]+1):(Ns[1]+Ns[2]+Ns[3])]
-# correh1<-corre[,(Ns[1]+Ns[2]+Ns[3]+1):(Ns[1]+Ns[2]+Ns[3]+Ns[4])]
+Ns <- c(ncol(datah4), ncol(datah3), ncol(datah2), ncol(datah1))
+correh4 <- corre[, 1:Ns[1]]
+correh3 <- corre[, (Ns[1] + 1):(Ns[1] + Ns[2])]
+correh2 <- corre[, (Ns[1] + Ns[2] + 1):(Ns[1] + Ns[2] + Ns[3])]
+correh1 <- corre[, (Ns[1] + Ns[2] + Ns[3] + 1):(Ns[1] + Ns[2] + Ns[3] + Ns[4])]
 
-# colnames(correh4)<-celltype4
-# colnames(correh3)<-celltype3
-# colnames(correh2)<-celltype2
-# colnames(correh1)<-celltype1
+colnames(correh4) <- celltype4
+colnames(correh3) <- celltype3
+colnames(correh2) <- celltype2
+colnames(correh1) <- celltype1
 
-# colnames(correh4)<-colnames(datah4)
-# colnames(correh3)<-colnames(datah3)
-# colnames(correh2)<-colnames(datah2)
-# colnames(correh1)<-colnames(datah1)
-# 
-# write.table(file="C_Smartseq_GSE86473.txt",correh4,row.names = TRUE, col.names = TRUE)
-# write.table(file="C_Smartseq_EMATB5061.txt",correh3,row.names = TRUE, col.names = TRUE)
-# write.table(file="C_CELLseq_SSE85241.txt",correh2,row.names = TRUE, col.names = TRUE)
-# write.table(file="C_CELLseq_GSE81076.txt",correh1,row.names = TRUE, col.names = TRUE)
+colnames(correh4) <- colnames(datah4)
+colnames(correh3) <- colnames(datah3)
+colnames(correh2) <- colnames(datah2)
+colnames(correh1) <- colnames(datah1)
+ 
+write.table(file="C_Smartseq_GSE86473.txt", correh4, row.names=TRUE, col.names=TRUE, sep="\t", quote=FALSE)
+write.table(file="C_Smartseq_EMATB5061.txt", correh3, row.names=TRUE, col.names=TRUE, sep="\t", quote=FALSE)
+write.table(file="C_CELLseq_SSE85241.txt", correh2, row.names=TRUE, col.names=TRUE, sep="\t", quote=FALSE)
+write.table(file="C_CELLseq_GSE81076.txt", correh1, row.names=TRUE, col.names=TRUE, sep="\t", quote=FALSE)
 ##########
 
-##########compute Silhouette coefficients on t-SNE coordinates
+########## compute Silhouette coefficients on t-SNE coordinates
 library(kBET)
 ct.fac <- factor(celltypes[allsamples])
 
 dd.unc <- as.matrix(dist(tsne.unc$Y)) 
 score_sil <- (cluster::silhouette(as.numeric(ct.fac), dd.unc))
-sil_unc<-score_sil[,3]  #for uncorrected data
+sil_unc <- score_sil[, 3]  #for uncorrected data
 
 dd.c <- as.matrix(dist(tsne.c$Y))
 score_sil <- (cluster::silhouette(as.numeric(ct.fac), dd.c))
