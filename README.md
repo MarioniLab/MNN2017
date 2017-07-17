@@ -12,7 +12,7 @@ This folder contains R codes used to generate figures 1-5 in the manuscript "Cor
 
 
 5. First download gene expression data from the four public data sets (Gene X Cell matrices, meta data and highly variable gene lists) by running the bash script `DownloadData.sh`.  This will download a directory 'ftp2.cruk.cam.ac.uk', which contains two sub-directories; CELseq and Smartseq2.  These directories contain the data for the appropriate studies (denoted by GEO/ArrayExpress accession number detailed in the manuscript).
-6. To generate any of the pancreas data sets results, you have to run the source file `preparedata.R` in the Pancreas folder first.
+6. To generate any of the pancreas data sets results, you have to run the source file `preparedata.R` in the Pancreas folder first. You will need to create a directory called 'results', into which all figures and batch corrected data will be saved.
 7. To correct the batch effects and generate t-SNE plots and the Silhouette boxplots for the pancreas data sets (Fig 4), run the source file `FourPlots_panc.R` in the Pancreas folder.
 8. Then, to generate the pancreas PCA plots and the entropy of mixings boxplots in the supplement (Suppl. Fig.3), run the source file `entropyandPCAs.R` in the Pancrease folder.
 9. To compare performance of MNN with locally variable batch effects versus a global batch effect settings (Suppl.Fig. 6), run the source file `local_global_batchvect.R` in the Pancrease folder.
