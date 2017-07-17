@@ -240,8 +240,6 @@ inc.cells <- merged.meta$Sample[merged.meta$CellType %in% inc.types]
 # cluster cells on the hvg
 all.cells <- merged.correct[all.hvg, intersect(inc.cells, colnames(merged.correct))]
 all.cells[is.na(all.cells)] <- 0
-
-# SC3 expects an sceset objec0t
 all.cells <- all.cells[, intersect(colnames(all.cells), merged.meta$Sample)]
 merged.meta <- merged.meta[merged.meta$Sample %in% intersect(colnames(all.cells), merged.meta$Sample), ]
 rownames(merged.meta) <- merged.meta$Sample
@@ -255,6 +253,8 @@ gse85241.cells <- merged.meta$Sample[merged.meta$Study == "GSE85241"]
 
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE}
+# use the euclidean distances to then perform tSNE on
+# NB: this is a slow operation as there are ~4000 cells to compute distances for
 set.seed(42)
 all.dist <- dist(t(all.cells), method='euclidean')
 all.tsne <- tsne_wrapper(all.dist, perplexity=50, is.dist=TRUE)
@@ -351,11 +351,11 @@ Based on the expression of these marker genes we can surmise that:
 * cluster 7 - Ductal cells (KRT19+)
 * cluster 7 - Mesenchyme/PSC cells (COL1A1+)
 
-cluster 7 are mix of ductal cells and mesenchyme/PSC cells, but they are delineated by the expression of COL1A1 and KRT19 as can be seen in the plots above with the marker gene expression overlaid on the tSNE plots.  Therefore with a combination of clustering and marker genes following dataset combination and batch correction, we can re-find the original cell labels.
+cluster 7 are mix of ductal cells and mesenchyme/PSC cells, but they are delineated by the expression of _COL1A1_ and _KRT19_ as can be seen in the plots above with the marker gene expression overlaid on the tSNE plots.  Therefore with a combination of clustering and marker genes following dataset combination and batch correction, we can re-find the original cell labels.
 
 Let's define them explicitly:
 
-```{r, echo=True, warning=FALSE, message=FALSE}
+```{r, echo=TRUE, warning=FALSE, message=FALSE}
 meta.marker$new.labels <- "Unk"
 meta.marker$new.labels[meta.marker$Kmeans == 1 & meta.marker$SST >= 6] <- "Delta"
 meta.marker$new.labels[meta.marker$Kmeans == 2 & meta.marker$INS >= 4] <- "Beta"
@@ -479,7 +479,7 @@ ma
 unique(raw.de.merge$gene_id[raw.de.merge$Sig == 1])
 ```
 
-As expected the two most DE genes are _PPY_ (marker gene for PP cells) and _SST_ (marker gene for delta cells).  There is a TF (_PAX6_) that might be relevant that is down-regulated in the delta cells relevant to the PP cells (is it a master TF for PP cells).  Apparently it is required for the maintenance of islet cell function [http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0054173], and it is a determinant of islet cell development from their Ngn3+ endocrine progenitor cells.  Additionally _ARX_, is a lineage specifier for PP and alpha islets.
+As expected the two most DE genes are _PPY_ (marker gene for PP cells) and _SST_ (marker gene for delta cells).  There is a TF (_PAX6_) that relevant which is down-regulated in the delta cells relative to the PP cells (it is a master TF for PP cells).  Apparently _PAX6_ is required for the maintenance of islet cell function [http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0054173], and it is a determinant of islet cell development from their Ngn3+ endocrine progenitor cells.
 
 Now let's look at what happens when we use the corrected data for all 4 data sets.
 
@@ -585,7 +585,7 @@ correct.gene.top[is.na(correct.gene.top)] <- ""
 ma.correct <- ggplot(correct.de.merge, aes(x=AveExpr, y=logFC, colour=Sig)) +
   geom_point(size=1, alpha=0.8) + theme_mike() +
   scale_colour_Publication() +
-  labs(x="Mean Cosine Normalized Expression",
+  labs(x=expression(paste("Mean log"[2], "Normalized Expression")),
        y=expression(paste("log"[2], " Fold Change")),
        title="MNN corrected PP vs. Delta cells") +
   guides('colour'=guide_legend(title="Statistically significant")) +
@@ -595,10 +595,9 @@ ma.correct <- ggplot(correct.de.merge, aes(x=AveExpr, y=logFC, colour=Sig)) +
 ma.correct
 ```
 
-We still see _SST_ and _PPY_ as the principal differences between delta and PP cells, which indicates nothing stupid is happening.  Additionally there genes such as _GC_ (vitamin D binding protein) and _LEPR_ leptin receptor that are now DE.  Infact we can look at how the two sets of DE genes intersect; the raw data DE genes should be a subset of the MNN corrected genes.
+We still see _SST_ and _PPY_ as the principal differences between delta and PP cells, which indicates nothing stupid is happening.  Additionally there are genes such as _GC_ (vitamin D binding protein) and _LEPR_ leptin receptor that are now DE.  In fact, we can look at how the two sets of DE genes intersect; the raw data DE genes should be a subset of the MNN corrected genes.
 
 Let's also have a volcano plot for both raw and corrected data.
-
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4.5, fig.width=7.5}
 raw.volcano <- ggplot(raw.de.merge, aes(x=logFC, y=-log10(adj.P.Val))) +
