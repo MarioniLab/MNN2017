@@ -197,13 +197,6 @@ gse86473.correct$gene_id <- rownames(gse86473.correct)
 
 emtab5061.correct$gene_id <- rownames(emtab5061.correct)
 
-# try it without subsampling cells.
-# randomly subsample 1000 cells from each batch
-gse81076.sample <- sample(colnames(gse81076.correct), 1000)
-gse85241.sample <- sample(colnames(gse85241.correct), 1000)
-emtab5061.sample <- sample(colnames(emtab5061.correct), 1000)
-gse86473.sample <- sample(colnames(gse86473.correct), 1000)
-
 set.seed(42)
 merge.list <- list("GSE81076"=gse81076.correct,
                    "GSE85241"=gse85241.correct,
