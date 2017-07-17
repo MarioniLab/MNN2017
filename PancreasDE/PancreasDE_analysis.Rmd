@@ -118,28 +118,31 @@ The raw data should have been downloaded with `DownloadData.sh`, and the batch c
 First we'll load all of the raw and batch corrected data into the R environment.  This might take a little while as these are quite large data sets (1000s of cells each).
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE}
-gse81076.correct <- read.table("~/src/MNN2017/Pancreas/results/C_CELLseq_GSE81076.txt",
+# all paths assume code is executed in the MNN2017 repository directory
+# change these as necessary
+
+gse81076.correct <- read.table("Pancreas/results/C_CELLseq_GSE81076.txt",
                                h=T, stringsAsFactors=F)
 
-gse81076.raw <- read.table("~/src/MNN2017/ftp2.cruk.cam.ac.uk/CELseq/GSE81076-norm.tsv.gz", sep="\t",
+gse81076.raw <- read.table("ftp2.cruk.cam.ac.uk/CELseq/GSE81076-norm.tsv.gz", sep="\t",
                            h=T, stringsAsFactors=F)
 
-gse85241.correct <- read.table("~/src/MNN2017/Pancreas/results/C_CELLseq_SSE85241.txt",
+gse85241.correct <- read.table("Pancreas/results/C_CELLseq_SSE85241.txt",
                                h=T, stringsAsFactors=F)
 
-gse85241.raw <- read.table("~/src/MNN2017/ftp2.cruk.cam.ac.uk/CELseq/GSE85241-norm.tsv.gz", sep="\t",
+gse85241.raw <- read.table("ftp2.cruk.cam.ac.uk/CELseq/GSE85241-norm.tsv.gz", sep="\t",
                            h=T, stringsAsFactors=F)
 
-emtab5061.correct <- read.table("~/src/MNN2017/Pancreas/results/C_Smartseq_EMATB5061.txt",
+emtab5061.correct <- read.table("Pancreas/results/C_Smartseq_EMATB5061.txt",
                                h=T, stringsAsFactors=F)
 
-emtab5061.raw <- read.table("~/src/MNN2017/ftp2.cruk.cam.ac.uk/Smartseq2/E-MTAB-5061-norm.tsv.gz", sep="\t",
+emtab5061.raw <- read.table("ftp2.cruk.cam.ac.uk/Smartseq2/E-MTAB-5061-norm.tsv.gz", sep="\t",
                            h=T, stringsAsFactors=F)
 
-gse86473.correct <- read.table("~/src/MNN2017/Pancreas/results/C_Smartseq_GSE86473.txt",
+gse86473.correct <- read.table("Pancreas/results/C_Smartseq_GSE86473.txt",
                                h=T, stringsAsFactors=F)
 
-gse86473.raw <- read.table("~/src/MNN2017/ftp2.cruk.cam.ac.uk/Smartseq2/GSE86473-norm.tsv.gz", sep="\t",
+gse86473.raw <- read.table("ftp2.cruk.cam.ac.uk/Smartseq2/GSE86473-norm.tsv.gz", sep="\t",
                                h=T, stringsAsFactors=F)
 
 
@@ -156,29 +159,29 @@ We also need to retrieve the meta data and highly variable genes, which are down
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE}
 # meta data
-gse81076.meta <- read.table("~/src/MNN2017/ftp2.cruk.cam.ac.uk/CELseq/GSE81076_marker_metadata.tsv", sep="\t",
+gse81076.meta <- read.table("ftp2.cruk.cam.ac.uk/CELseq/GSE81076_marker_metadata.tsv", sep="\t",
                             stringsAsFactors=F, h=T)
 
-gse85241.meta <- read.table("~/src/MNN2017/ftp2.cruk.cam.ac.uk/CELseq/GSE85241_marker_metadata.tsv", sep="\t",
+gse85241.meta <- read.table("ftp2.cruk.cam.ac.uk/CELseq/GSE85241_marker_metadata.tsv", sep="\t",
                             stringsAsFactors=F, h=T)
 
-emtab5061.meta <- read.table("~/src/MNN2017/ftp2.cruk.cam.ac.uk/Smartseq2/E-MTAB-5061_marker_metadata.tsv", sep="\t",
+emtab5061.meta <- read.table("ftp2.cruk.cam.ac.uk/Smartseq2/E-MTAB-5061_marker_metadata.tsv", sep="\t",
                             stringsAsFactors=F, h=T)
 
-gse86473.meta <- read.table("~/src/MNN2017/ftp2.cruk.cam.ac.uk/Smartseq2/GSE86473_marker_metadata.tsv", sep="\t",
+gse86473.meta <- read.table("ftp2.cruk.cam.ac.uk/Smartseq2/GSE86473_marker_metadata.tsv", sep="\t",
                             stringsAsFactors=F, h=T)
 gse86473.meta$Study <- "GSE86473"
 
-gse86473.hvg <- read.table("~/src/MNN2017/ftp2.cruk.cam.ac.uk/Smartseq2/GSE86473-HVG.tsv", h=F, sep="\t",
+gse86473.hvg <- read.table("ftp2.cruk.cam.ac.uk/Smartseq2/GSE86473-HVG.tsv", h=F, sep="\t",
                            stringsAsFactors=F)
 
-gse81076.hvg <- read.table("~/src/MNN2017/ftp2.cruk.cam.ac.uk/CELseq/GSE81076-HVG.tsv", h=F, sep="\t",
+gse81076.hvg <- read.table("ftp2.cruk.cam.ac.uk/CELseq/GSE81076-HVG.tsv", h=F, sep="\t",
                            stringsAsFactors=F)
 
-emtab5061.hvg <- read.table("~/src/MNN2017/ftp2.cruk.cam.ac.uk/Smartseq2//E-MTAB-5061-HVG.tsv", h=F, sep="\t",
+emtab5061.hvg <- read.table("ftp2.cruk.cam.ac.uk/Smartseq2//E-MTAB-5061-HVG.tsv", h=F, sep="\t",
                            stringsAsFactors=F)
 
-gse85241.hvg <- read.table("~/src/MNN2017/ftp2.cruk.cam.ac.uk/CELseq//GSE85241-HVG.tsv", h=F, sep="\t",
+gse85241.hvg <- read.table("ftp2.cruk.cam.ac.uk/CELseq//GSE85241-HVG.tsv", h=F, sep="\t",
                            stringsAsFactors=F)
 ```
 
