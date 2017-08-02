@@ -13,19 +13,16 @@
 #p.adj: adjusted p-value for each gene
 #genes.high.var: genes with a p-value < p.adj.thr
 ##############################################
-require(DESeq2)
 
 find.high.var.biol.genes<-function(counts, genes, red.line=TRUE, p.adj.thr,minMean=10, plot=FALSE){
   
-  raw.counts<-counts
-  
+  require(DESeq2)
+
   #compute size factors (with biological genes)
-  sf.genes<-estimateSizeFactorsForMatrix(raw.counts) #estimate size factor
-  
-  data<-t( t(raw.counts) / sf.genes)
-  
-  data<-data[genes,]
-  raw.counts<-raw.counts[genes,]
+  #sf.genes<-estimateSizeFactorsForMatrix(raw.counts) #estimate size factor
+  #data<-t( t(raw.counts) / sf.genes)
+  #raw.counts<-raw.counts[genes,]
+  data<-counts[genes,]
   
   #estimate the sample moments 
   means<-rowMeans(data)
