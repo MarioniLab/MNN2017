@@ -6,4 +6,4 @@
 # highly variable genes - GSE81076-HVG.tsv, GSE85241-HVG.tsv, GSE86473-HVG.tsv, E-MTAB-5061-HVG.tsv
 # meta data - GSE81076-marker_metadata.tsv, GSE85241-marker_metadata.tsv, GSE86473-marker_metadata.tsv, E-MTAB-5061-marker_metadata.tsv
 
-wget -r --user jmlabftp --password HOBICAmeer6 ftp2.cruk.cam.ac.uk:/*
+wget -r --user jmlabftp --password HOBICAmeer6 ftp2.cruk.cam.ac.uk:/*seq*
