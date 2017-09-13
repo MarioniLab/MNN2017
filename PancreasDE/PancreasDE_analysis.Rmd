@@ -643,7 +643,7 @@ Thus we can see that by appropriately combining data sets and correcting for bat
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 # write out a list of the corrected DE genes
 write.table(correct.de.genes,
-            file="~/src/MNN2017/PancreasDE/PancreasDE_analysis_files/Corrected_DE_genes.tsv",
+            file="PancreasDE/PancreasDE_analysis_files/Corrected_DE_genes.tsv",
             h=F, sep="\t", quote=F, row.names=F)
 ```
 
