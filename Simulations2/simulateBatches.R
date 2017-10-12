@@ -7,10 +7,14 @@ ncells <- 1000  # Number of cells
 # Cells are distributed according to a bivariate normal in a 2-D biological subspace. 
 # Each cell type has a different x/y center and a different SD.
 
-xmus <- c(0,3,10)
+xmus <- c(0,5,5)
 xsds <- c(1,0.1,1)
-ymus <- c(2,5,1)
+ymus <- c(5,5,0)
 ysds <- c(1,0.1,1)
+
+# Note that the different centers should not lie on the same y=mx line; this represents populations that differ only in library size. 
+# Such differences should not be present in normalized data, and will be eliminated by the cosine normalization step.
+# The centers above are chosen so as to guarantee good separation between the different components.
 
 #####################################
 # Generating data for batch 1, with a given proportion of cells in each component. 

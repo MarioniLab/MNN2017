@@ -42,16 +42,16 @@ for (easy in c(FALSE, TRUE)) {
     all.dists2.unc <- as.matrix(dist(t(raw.all)))
     set.seed(0)
     tsne.unc <- Rtsne(all.dists2.unc, is_distance=TRUE)#, perplexity = 0.9)
-    plotFUN(paste0("figs/", prefix, "unc.png"), Y=tsne.unc$Y, batch.id=batch.id, cols=clust.cols, main="Uncorrected",xlim=c(-35,30),ylim=c(-40,45))
+    plotFUN(paste0("figs/", prefix, "unc.png"), Y=tsne.unc$Y, batch.id=batch.id, cols=clust.cols, main="Uncorrected")
 
-    # MNN corrected.
-    Xmnn <- mnnCorrect(B1, B2, k=20, sigma=1, cos.norm=FALSE, svd.dim=2)
+    # MNN corrected (default parameters at time of testing).
+    Xmnn <- mnnCorrect(B1, B2, k=20, sigma=1, svd.dim=2, cos.norm=TRUE)
     corre <- cbind(Xmnn$corrected[[1]],Xmnn$corrected[[2]])
     all.dists2.c <- as.matrix(dist(t(corre)))
 
     set.seed(0)
     tsne.c <- Rtsne(all.dists2.c, is_distance=TRUE)#, perplexity = 0.9)
-    plotFUN(paste0("figs/", prefix, "mnn.png"), Y=tsne.c$Y, batch.id=batch.id, col=clust.cols, main="MNN corrected",xlim=c(-30,40),ylim=c(-45,45))
+    plotFUN(paste0("figs/", prefix, "mnn.png"), Y=tsne.c$Y, batch.id=batch.id, col=clust.cols, main="MNN")
 
     # limma.
     Xlm <- removeBatchEffect(raw.all, factor(batch.id))
@@ -59,7 +59,7 @@ for (easy in c(FALSE, TRUE)) {
 
     set.seed(0)
     tsne.lm <- Rtsne(all.dists2.lm, is_distance=TRUE)#, perplexity = 0.9)
-    plotFUN(paste0("figs/", prefix, "lmfit.png"), Y=tsne.lm$Y, batch.id=batch.id, col=clust.cols, main="limma corrected",xlim=c(-30,30),ylim=c(-35,45))
+    plotFUN(paste0("figs/", prefix, "lmfit.png"), Y=tsne.lm$Y, batch.id=batch.id, col=clust.cols, main="limma")
 
     # ComBat.
     cleandat <- ComBat(raw.all, factor(batch.id), mod=NULL, prior.plots = FALSE)
@@ -67,7 +67,7 @@ for (easy in c(FALSE, TRUE)) {
     
     set.seed(0)
     tsne.combat<-Rtsne(all.dists.combat, is_distance=TRUE)
-    plotFUN(paste0("figs/", prefix, "combat.png"), Y=tsne.combat$Y, batch.id=batch.id, col=clust.cols, main="ComBat corrected",xlim=c(-35,30),ylim=c(-35,30))
+    plotFUN(paste0("figs/", prefix, "combat.png"), Y=tsne.combat$Y, batch.id=batch.id, col=clust.cols, main="ComBat")
 }
 
 ##########################################
