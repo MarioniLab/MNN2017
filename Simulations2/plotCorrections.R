@@ -73,7 +73,7 @@ for (easy in c(FALSE, TRUE)) {
 ##########################################
 # Printing out the legend 
 
-png(file="leg.png",width=900,height=700)
+png(file="figs/leg.png",width=900,height=700)
 plot.new()
 legend("topleft", legend = c("Cell type 1", "Cell type 2", "Cell type 3", "Batch 1", "Batch 2"),
        col = c("brown1", "dark green", "blue", "black", "black"), 
