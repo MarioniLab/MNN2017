@@ -1,4 +1,4 @@
-#Code for the t-SNE plots of pancrease data sets and the Silhouette coefficients before and after batch correction by different methods (main text Figure 4).
+#Code for the t-SNE plots of pancreas data sets and the Silhouette coefficients before and after batch correction by different methods (main text Figure 4).
 this.dir <- dirname(parent.frame(2)$ofile)
 setwd(this.dir)
 
