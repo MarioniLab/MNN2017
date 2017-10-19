@@ -2,3 +2,7 @@
 .Rhistory
 *.RData
 *.png
+*.txt
+*.tsv
+*.gz
+*.zip
