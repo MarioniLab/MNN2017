@@ -1,5 +1,8 @@
 # Read pancreas data and meta data and set of highly variable genes + preprocessing of data befor batch correction; match gene names accross data sets.  
 # this script needs to start from the raw counts matrix (or even download it directly if possible)
+
+#### This script is superfluous as we can work directly from the flat files
+
 #this.dir <- dirname(parent.frame(2)$ofile)
 #setwd(this.dir)
 
@@ -17,8 +20,8 @@ HVG4 <- read.table("Pancreas/Data/E-MTAB-5061-HVG.tsv", sep="\t", h=TRUE, string
 
 # read in meta data with cell type labels
 # only cells that have passed previous QC steps are included in these meta data files
-meta1 <- read.table("Pancreas/Data/GSE81076_metadata.tsv", sep="\t", stringsAsFactors = FALSE, head=TRUE)
-meta2 <- read.table("Pancreas/Data/GSE85241_metadata.tsv", sep="\t", stringsAsFactors = FALSE, head=TRUE)
+meta1 <- read.table("Pancreas/Data/GSE81076_marker_metadata.tsv", sep="\t", stringsAsFactors = FALSE, head=TRUE)
+meta2 <- read.table("Pancreas/Data/GSE85241_marker_metadata.tsv", sep="\t", stringsAsFactors = FALSE, head=TRUE)
 meta3 <- read.table("Pancreas/Data/GSE86473_metadata.tsv", sep="\t", stringsAsFactors = FALSE, head=TRUE)
 meta4 <- read.table("Pancreas/Data/E-MTAB-5061_metadata.tsv", sep="\t", stringsAsFactors = FALSE, head=TRUE)
 
@@ -32,6 +35,7 @@ datah4 <- datah4[, c(intersect(colnames(datah4), meta4$Sample), "gene_id")]
 # remove any duplicate names and set the rownames to geneIDs
 genes1 <- as.character(datah1[, dim(datah1)[2]])
 duplrows <- which(duplicated(genes1))
+# trim off the last column that contains the gene IDs
 datah1 <- datah1[, -dim(datah1)[2]]
 row.names(datah1) <- genes1
 
