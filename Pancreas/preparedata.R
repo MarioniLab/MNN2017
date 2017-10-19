@@ -1,31 +1,32 @@
 # Read pancreas data and meta data and set of highly variable genes + preprocessing of data befor batch correction; match gene names accross data sets.  
-this.dir <- dirname(parent.frame(2)$ofile)
-setwd(this.dir)
+# this script needs to start from the raw counts matrix (or even download it directly if possible)
+#this.dir <- dirname(parent.frame(2)$ofile)
+#setwd(this.dir)
 
 # read data files
-datah1 <- read.table("../ftp2.cruk.cam.ac.uk/CELseq/GSE81076-norm.tsv.gz", sep="\t", stringsAsFactors=FALSE, head=TRUE)
-datah2 <- read.table("../ftp2.cruk.cam.ac.uk/CELseq/GSE85241-norm.tsv.gz", sep="\t", stringsAsFactors=FALSE, head=TRUE)
-datah3 <- read.table("../ftp2.cruk.cam.ac.uk/Smartseq2/E-MTAB-5061-norm.tsv.gz", sep="\t", stringsAsFactors=FALSE, head=TRUE)
-datah4 <- read.table("../ftp2.cruk.cam.ac.uk/Smartseq2/GSE86473-norm.tsv.gz", sep="\t", stringsAsFactors=FALSE, head=TRUE)
+datah1 <- read.table("Pancreas/Data/GSE81076_SFnorm.tsv", sep="\t", stringsAsFactors=FALSE, head=TRUE)
+datah2 <- read.table("Pancreas/Data/GSE85241_SFnorm.tsv", sep="\t", stringsAsFactors=FALSE, head=TRUE)
+datah3 <- read.table("Pancreas/Data/GSE86473_SFnorm.tsv", sep="\t", stringsAsFactors=FALSE, head=TRUE)
+datah4 <- read.table("Pancreas/Data/E-MTAB-5061_SFnorm.tsv", sep="\t", stringsAsFactors=FALSE, head=TRUE)
 
 # read in highly variable gene files
-HVG1 <- read.table("../ftp2.cruk.cam.ac.uk/CELseq/GSE81076-HVG.tsv", sep="\t", h=FALSE, stringsAsFactors=FALSE)
-HVG2 <- read.table("../ftp2.cruk.cam.ac.uk/CELseq/GSE85241-HVG.tsv", sep="\t", h=FALSE, stringsAsFactors=FALSE)
-HVG3 <- read.table("../ftp2.cruk.cam.ac.uk/Smartseq2/E-MTAB-5061-HVG.tsv", sep="\t", h=FALSE, stringsAsFactors=FALSE)
-HVG4 <- read.table("../ftp2.cruk.cam.ac.uk/Smartseq2/GSE86473-HVG.tsv", sep=\t", h=FALSE, stringsAsFactors=FALSE)
+HVG1 <- read.table("Pancreas/Data/GSE81076-HVG.tsv", sep="\t", h=TRUE, stringsAsFactors=FALSE)
+HVG2 <- read.table("Pancreas/Data/GSE85241-HVG.tsv", sep="\t", h=TRUE, stringsAsFactors=FALSE)
+HVG3 <- read.table("Pancreas/Data/GSE86473-HVG.tsv", sep="\t", h=TRUE, stringsAsFactors=FALSE)
+HVG4 <- read.table("Pancreas/Data/E-MTAB-5061-HVG.tsv", sep="\t", h=TRUE, stringsAsFactors=FALSE)
 
 # read in meta data with cell type labels
 # only cells that have passed previous QC steps are included in these meta data files
-meta1 <- read.table("../ftp2.cruk.cam.ac.uk/CELseq/GSE81076_marker_metadata.tsv", sep="\t", stringsAsFactors = FALSE, head=TRUE)
-meta2 <- read.table("../ftp2.cruk.cam.ac.uk/CELseq/GSE85241_marker_metadata.tsv", sep="\t", stringsAsFactors = FALSE, head=TRUE)
-meta3 <- read.table("../ftp2.cruk.cam.ac.uk/Smartseq2/E-MTAB-5061_marker_metadata.tsv", sep="\t", stringsAsFactors = FALSE, head=TRUE)
-meta4 <- read.table("../ftp2.cruk.cam.ac.uk/Smartseq2/GSE86473_marker_metadata.tsv", sep="\t", stringsAsFactors = FALSE, head=TRUE)
+meta1 <- read.table("Pancreas/Data/GSE81076_metadata.tsv", sep="\t", stringsAsFactors = FALSE, head=TRUE)
+meta2 <- read.table("Pancreas/Data/GSE85241_metadata.tsv", sep="\t", stringsAsFactors = FALSE, head=TRUE)
+meta3 <- read.table("Pancreas/Data/GSE86473_metadata.tsv", sep="\t", stringsAsFactors = FALSE, head=TRUE)
+meta4 <- read.table("Pancreas/Data/E-MTAB-5061_metadata.tsv", sep="\t", stringsAsFactors = FALSE, head=TRUE)
 
 # subset metadata to include cells for which data are available, i.e. passed QC, keep gene ID column
 datah1 <- datah1[, c(intersect(colnames(datah1), meta1$Sample), "gene_id")]
 datah2 <- datah2[, c(intersect(colnames(datah2), meta2$Sample), "gene_id")]
-datah3 <- datah3[, c(intersect(colnames(datah3), meta3$Sample), "hgnc_symbol")]
-datah4 <- datah4[, c(intersect(colnames(datah4), meta4$Sample), "hgnc_symbol")]
+datah3 <- datah3[, c(intersect(colnames(datah3), meta3$Sample), "gene_id")]
+datah4 <- datah4[, c(intersect(colnames(datah4), meta4$Sample), "gene_id")]
 
 # last columns is the genes name
 # remove any duplicate names and set the rownames to geneIDs
@@ -75,7 +76,6 @@ for (i in 1:dim(datah4)[2]) {
   celltype4[i] <- substr(tolower(meta4$CellType[ci]), start=1, stop=4)
 }
 
-
 # test without these inquiry genes to make sure it all still works
 # prepare batches with identical row names (matched gene names) 
 #inquiry_genes <- intersect(genes1, intersect(genes2, intersect(genes3, genes4)))
@@ -86,9 +86,9 @@ for (i in 1:dim(datah4)[2]) {
 
 # find of set of highly variable gene names which are present in all data sets 
 # this should be the union of highly variable genes, not the intersection?
-HVG <- unique(HVG1$V1, HVG2$V1, HVG3$V1, HVG4$V1)
+HVG <- unique(c(HVG1$gene_id, HVG2$gene_id, HVG3$gene_id, HVG4$gene_id))
 
-# common_genes <- intersect(genes1, intersect(genes2, intersect(genes3, intersect(HVG, genes4))))
+common_genes <- intersect(genes1, intersect(genes2, intersect(genes3, genes4)))
 # hvg_genes <- common_genes
 
 ## further cleaning
@@ -119,10 +119,15 @@ narow <- which(is.na(datah4[, 2])) #there was a narow!
 if (length(narow) > 0) {
   datah4 <- datah4[-narow,]
 }
-########
 
-# write out batch corrected files out for clustering, differential expression testing and other downstream analyses
+# only write out the matrices that conform based on gene IDs
+datah1 <- datah1[common_genes, ]
+datah2 <- datah2[common_genes, ]
+datah3 <- datah3[common_genes, ]
+datah4 <- datah4[common_genes, ] 
+
+# save the R data objects of the normalized expression matrices, cell labels and highly variable gene
 save(datah1, datah2, datah3, datah4,
 	     celltype1, celltype2, celltype3, celltype4,
-	     inquiry_genes, hvg_genes,
-	     file="raw_complete4DataSets.RData")
+	     HVG,
+	     file="Pancreas/raw_complete4DataSets.RData")
