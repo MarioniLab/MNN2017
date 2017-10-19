@@ -200,6 +200,11 @@ gse86473.meta <- read.table('Pancreas/RawData/GSE86473_experimental_design.tsv',
 gse86473.meta$Sample <- tolower(gse86473.meta$Sample)
 gse86473.meta$Study <- "GSE86473"
 
+# capitalize first letter of cell labels
+
+gse86473.meta$CellType <- paste(toupper(substr(gse86473.meta$CellType, 1, 1)),
+                                substr(gse86473.meta$CellType, 2, nchar(gse86473.meta$CellType)), sep="")
+
 write.table(gse86473.meta,
             "Pancreas/Data/GSE86473_metadata.tsv",
             sep="\t", quote=FALSE, row.names=FALSE)
@@ -303,6 +308,12 @@ remove.cells <- unique(emtab.sdrf$Assay.Name[emtab.sdrf$Characteristics.single.c
 emtab5061.df <- emtab5061.df[, !colnames(emtab5061.df) %in% remove.cells]
 emtab.meta <- emtab.meta[!emtab.meta$Sample %in% remove.cells, ]
 rownames(emtab.meta) <- emtab.meta$Sample
+
+emtab.meta$CellType <- gsub(emtab.meta$CellType,
+                            pattern=" cell", replacement="")
+
+emtab.meta$CellType <- paste(toupper(substr(emtab.meta$CellType, 1, 1)),
+                             substr(emtab.meta$CellType, 2, nchar(emtab.meta$CellType)), sep="")
 
 write.table(emtab.meta,
             file="Pancreas/Data/E-MTAB-5061_metadata.tsv",

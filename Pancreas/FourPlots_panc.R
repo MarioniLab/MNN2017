@@ -179,8 +179,12 @@ all(rownames(r.datah1) == rownames(r.datah2) &
 # merge uncorrected data
 raw.all <- cbind(r.datah1, r.datah2, r.datah3, r.datah4)
 
+# take union of all hvgs together
+all.hvgs <- unique(c(HVG1, HVG2, HVG3, HVG4))
+common.hvgs <- intersect(HVG1, intersect(HVG2, intersect(HVG3, HVG4)))
+
 # sample 1000 cells from each batch for t-SNE plotting for computational reasons
-set.seed(2)
+# set.seed(2)
 #samples1 <- sample(1:dim(datah1)[2], 1000) 
 #samples2 <- sample(1:dim(datah2)[2], 1000)
 #samples3 <- sample(1:dim(datah3)[2], 1000)
@@ -188,24 +192,43 @@ set.seed(2)
 allsamples <- c(samples1, samples2, samples3, samples4)
 
 # tidy cell type to just keep the major lineages
-celltypes <- c(celltype1, celltype2, celltype3, celltype4)
-celltypes[celltypes == "pp"] <- "gamma"
-celltypes[celltypes == "mese"] <- "other"
-celltypes[celltypes == "co-e"] <- "other"
-celltypes[celltypes == "endo"] <- "other"
-celltypes[celltypes == "epsi"] <- "other"
-celltypes[celltypes == "mast"] <- "other"
-celltypes[celltypes == "mhc "] <- "other"
-celltypes[celltypes == "uncl"] <- "other"
-celltypes[celltypes == "psc "] <- "other"
+celltypes <- c(celltypes1, celltypes2, celltypes3, celltypes4)
+celltypes[celltypes == "PP"] <- "Gamma"
+celltypes[grepl(celltypes, pattern="Mesenchyme")] <- "other"
+celltypes[grepl(celltypes, pattern="Co-ex")] <- "other"
+celltypes[grepl(celltypes, pattern="Endo")] <- "other"
+celltypes[grepl(celltypes, pattern="Epsi")] <- "other"
+celltypes[grepl(celltypes, pattern="Mast")] <- "other"
+celltypes[grepl(celltypes, pattern="MHC")] <- "other"
+celltypes[grepl(celltypes, pattern="Uncl")] <- "other"
+celltypes[grepl(celltypes, pattern="Not")] <- "other"
+celltypes[grepl(celltypes, pattern="PSC")] <- "other"
 
-celltypes[celltypes == "alph"] <- "alpha"
-celltypes[celltypes == "delt"] <- "delta"
-celltypes[celltypes == "gamm"] <- "gamma"
-celltypes[celltypes == "psc "] <- "other"
+# celltypes[celltypes == "co-e"] <- "other"
+# celltypes[celltypes == "endo"] <- "other"
+# celltypes[celltypes == "epsi"] <- "other"
+# celltypes[celltypes == "mast"] <- "other"
+# celltypes[celltypes == "mhc "] <- "other"
+# celltypes[celltypes == "uncl"] <- "other"
+# celltypes[celltypes == "psc "] <- "other"
+# 
+# celltypes[celltypes == "alph"] <- "alpha"
+# celltypes[celltypes == "delt"] <- "delta"
+# celltypes[celltypes == "gamm"] <- "gamma"
+# celltypes[celltypes == "psc "] <- "other"
+
+# check cell types and samples are the same length
+length(allsamples) == length(celltypes)
+
+# setup the matrix of highly variable gene expression across all cells
+# this needs to drop any all-zero rows/columns
+raw.hvg <- raw.all[rownames(raw.all) %in% common.hvgs, ]
+
+# get a vector of study IDs
+batch.id <- c(meta1$Study, meta2$Study, meta3$Study, meta4$Study)
 
 ##### set cell type colorings
-allcolors <- labels2colors(celltypes[allsamples])
+allcolors <- labels2colors(celltypes)
 allcolors[allcolors == "red"] <- "deeppink"
 allcolors[allcolors == "yellow"] <- "orange1" # "darkgoldenrod1"
 
@@ -216,28 +239,46 @@ N <- c(1000, 2000, 3000, 4000)
 #      length(celltype2)+length(celltype3)+length(celltype4)+length(celltype1))
 
 #### Uncorrected data 
-all.dists2.unc <- as.matrix(dist(t(raw.all[HVG, allsamples])))
+# this doesn't need to be a distance matrix!
+#all.dists2.unc <- as.matrix(dist(t(raw.all[all.hvgs, allsamples])))
 par(mfrow=c(1, 1))
 
 set.seed(0)
-tsne.unc <- Rtsne(all.dists2.unc, is_distance=TRUE)#, perplexity = 5)
+tsne.unc <- Rtsne(t(raw.all), perplexity = 50)
 
+# input and output order are the same
+unc.tsne <- data.frame(tsne.unc$Y)
+colnames(unc.tsne) <- c("Dim1", "Dim2")
+unc.tsne$Samples <- allsamples
+unc.tsne$CellType <- celltypes
+unc.tsne$Study <- batch.id
+unc.tsne$CellColour <- allcolors
+  
 png(file="unc4321.png", width=900, height=700)
 par(mfrow=c(1,1), mar=c(6,6,4,2), cex.axis=2, cex.main=3, cex.lab=2.5)
-plot(tsne.unc$Y[1:N[1], 1], tsne.unc$Y[1:N[1], 2], pch=3, cex=4, col=alpha(allcolors[1:N[1]],0.6),
-			main="Uncorrected", xlim=c(-30,25), ylim=c(-20,30), xlab="tSNE 1", ylab="tSNE 2")
 
-points(tsne.unc$Y[(N[1]+1):N[2], 1], tsne.unc$Y[(N[1]+1):N[2], 2], pch=18,cex=4, col=alpha(allcolors[(N[1]+1):N[2]], 0.6))
-points(tsne.unc$Y[(N[2]+1):N[3], 1], tsne.unc$Y[(N[2]+1):N[3], 2], pch=1,cex=4, col=alpha(allcolors[(N[2]+1):N[3]], 0.6))
-points(tsne.unc$Y[(N[3]+1):N[4], 1], tsne.unc$Y[(N[3]+1):N[4], 2], pch=4,cex=4, col=alpha(allcolors[(N[3]+1):N[4]], 0.6))
+# create a plot with colour as cell type and shape as batch
+plot(unc.tsne$Dim1,
+     unc.tsne$Dim2,
+     pch=c(rep(3, dim(unc.tsne[unc.tsne$Study == "GSE81076",])[2]),
+           rep(18, dim(unc.tsne[unc.tsne$Study == "GSE85241",])[2]),
+           rep(1, dim(unc.tsne[unc.tsne$Study == "GSE86473",])[2]),
+           rep(4, dim(unc.tsne[unc.tsne$Study == "E-MTAB-5061",])[2])),
+     cex=1, 
+     col=alpha(unc.tsne$CellColour, 0.6),
+     main="Uncorrected", xlab="tSNE 1", ylab="tSNE 2")
+
+# points(tsne.unc$Y[(N[1]+1):N[2], 1], tsne.unc$Y[(N[1]+1):N[2], 2], pch=18,cex=4, col=alpha(allcolors[(N[1]+1):N[2]], 0.6))
+# points(tsne.unc$Y[(N[2]+1):N[3], 1], tsne.unc$Y[(N[2]+1):N[3], 2], pch=1,cex=4, col=alpha(allcolors[(N[2]+1):N[3]], 0.6))
+# points(tsne.unc$Y[(N[3]+1):N[4], 1], tsne.unc$Y[(N[3]+1):N[4], 2], pch=4,cex=4, col=alpha(allcolors[(N[3]+1):N[4]], 0.6))
 dev.off()
 
 ### MNN batch correction
-inquiry_genes <- row.names(datah4)
-Xmnn <- mnnCorrect(datah4, datah3, datah2, datah1,
+#inquiry_genes <- row.names(datah4)
+Xmnn <- mnnCorrect(r.datah1, r.datah2, r.datah3, r.datah4,
      	#inquiry.genes=inquiry_genes,
-        hvg.genes=HVG, k=20, sigma=0.1,
-	cos.norm=TRUE, svd.dim=0) # batch correction is throwing an error because of non-numeric values?
+     	hvg.genes=all.hvgs, k=20, sigma=0.1,
+     	cos.norm=TRUE, svd.dim=0) # batch correction is throwing an error because of non-numeric values?
 
 corre <- cbind(Xmnn$corrected[[1]], Xmnn$corrected[[2]], Xmnn$corrected[[3]], Xmnn$corrected[[4]])
 all.dists2.c <- as.matrix(dist(t(corre[HVG, allsamples])))
