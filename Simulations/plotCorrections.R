@@ -45,7 +45,7 @@ for (easy in c(FALSE, TRUE)) {
     plotFUN(paste0("figs/", prefix, "unc.png"), Y=tsne.unc$Y, batch.id=batch.id, cols=clust.cols, main="Uncorrected")
 
     # MNN corrected (default parameters at time of testing).
-    Xmnn <- mnnCorrect(B1, B2, k=20, sigma=1, svd.dim=2, cos.norm=TRUE)
+    Xmnn <- mnnCorrect(B1, B2, k=20, sigma=1, svd.dim=0, cos.norm=TRUE)
     corre <- cbind(Xmnn$corrected[[1]],Xmnn$corrected[[2]])
     all.dists2.c <- as.matrix(dist(t(corre)))
 
