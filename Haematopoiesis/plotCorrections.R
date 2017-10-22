@@ -56,7 +56,7 @@ t.unc <- t(X.unc)
 require(Rtsne)
 set.seed(0)
 all.dists.unc <- as.matrix(dist(t.unc))
-tsne.unc <- Rtsne(all.dists.unc, is_distance=TRUE)#, perplexity = 90)
+tsne.unc <- Rtsne(all.dists.unc, is_distance=TRUE, perplexity = 90)
 plotFUN("results/uncFA.png", tsne.unc$Y, main="Uncorrected")
 plotFUNb("results/uncFAb.png", tsne.unc$Y, main="Uncorrected")
 
@@ -80,7 +80,7 @@ t.mnn <- t(X.mnn)
 # Generating a t-SNE plot.
 set.seed(0)
 all.dists.mnn <- as.matrix(dist(t.mnn))
-tsne.mnn <- Rtsne(all.dists.mnn, is_distance=TRUE)#, perplexity = 90)
+tsne.mnn <- Rtsne(all.dists.mnn, is_distance=TRUE, perplexity = 90)
 plotFUN("results/mnnFA.png", tsne.mnn$Y, main="MNN")
 plotFUNb("results/mnnFAb.png", tsne.mnn$Y, main="MNN")
 
@@ -104,7 +104,7 @@ t.lm <- t(X.lm)
 # Generating a t-SNE plot.
 set.seed(0)
 all.dists.lm <- as.matrix(dist(t.lm))
-tsne.lm <- Rtsne(all.dists.lm, is_distance=TRUE)#, perplexity = 90)
+tsne.lm <- Rtsne(all.dists.lm, is_distance=TRUE, perplexity = 90)
 plotFUN("results/lmfitFA.png", tsne.lm$Y, main="limma")
 plotFUNb("results/lmfitFAb.png", tsne.lm$Y, main="limma")
 
@@ -129,7 +129,7 @@ t.combat <- t(X.combat)
 # Generating a t-SNE plot.
 set.seed(0)
 all.dists.combat <- as.matrix(dist(t.combat))
-tsne.combat<-Rtsne(all.dists.combat, is_distance=TRUE)#,perplexity = 90)
+tsne.combat<-Rtsne(all.dists.combat, is_distance=TRUE,perplexity = 90)
 plotFUN("results/combatFA.png", tsne.combat$Y, main="ComBat")
 plotFUNb("results/combatFAb.png", tsne.combat$Y, main="ComBat")
 
