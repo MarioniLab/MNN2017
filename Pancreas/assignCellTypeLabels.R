@@ -131,6 +131,9 @@ write.table(marker_uber,
 ############
 # GSE85241 #
 ############
+rm(list=ls())
+gc()
+
 # read in the normalized expression data
 gse85241.norm <- read.table("Pancreas/Data/GSE85241_SFnorm.tsv",
                             h=TRUE, sep="\t", stringsAsFactors=FALSE)
@@ -249,4 +252,7 @@ table(marker_uber$CellType)
 write.table(marker_uber,
             file="Pancreas/Data/GSE85241_marker_metadata.tsv",
             sep="\t", quote=F, row.names=F, col.names=T)
+
+rm(list=ls())
+gc()
 

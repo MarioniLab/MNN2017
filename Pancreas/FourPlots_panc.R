@@ -11,6 +11,7 @@ require(WGCNA)
 require(Rtsne)
 library(scales)
 library(scran)
+library(ggplot2)
 
 ############
 # GSE81076 #
@@ -162,6 +163,12 @@ samples4 <- colnames(datah4)
 # check all dimensions match up
 if(dim(datah4)[2] == dim(meta4)[1]) {dim(datah4)[2] == length(celltypes4)}
 
+# create one big meta data frame
+all.meta <- do.call(rbind.data.frame, list("b1"=meta1[, c("Sample", "CellType", "Protocol", "Study")],
+                                           "b2"=meta2[, c("Sample", "CellType", "Protocol", "Study")],
+                                           "b3"=meta3[, c("Sample", "CellType", "Protocol", "Study")],
+                                           "b4"=meta4[, c("Sample", "CellType", "Protocol", "Study")]))
+
 ##########################################################################
 ##########################################################################
 # Merge all four data matrices together based on a common set of gene IDs
@@ -176,19 +183,47 @@ all(rownames(r.datah1) == rownames(r.datah2) &
       rownames(r.datah3) == rownames(r.datah4) &
       rownames(r.datah1) == rownames(r.datah4))
 
-# merge uncorrected data
-raw.all <- cbind(r.datah1, r.datah2, r.datah3, r.datah4)
+# sample 1000 cells from each batch for t-SNE plotting for computational reasons
+set.seed(2)
+sub1 <- colnames(r.datah1)[sample(1:dim(r.datah1)[2], 1000)]
+sub2 <- colnames(r.datah2)[sample(1:dim(r.datah2)[2], 1000)]
+sub3 <- colnames(r.datah3)[sample(1:dim(r.datah3)[2], 1000)]
+sub4 <- colnames(r.datah4)[sample(1:dim(r.datah4)[2], 1000)]
+subsamples <- c(sub1, sub2, sub3, sub4)
+
+sub.datah1 <- r.datah1[common.genes, sub1]
+sub.datah1$gene_id <- rownames(sub.datah1)
+
+sub.datah2 <- r.datah2[common.genes, sub2]
+sub.datah2$gene_id <- rownames(sub.datah2)
+
+sub.datah3 <- r.datah3[common.genes, sub3]
+sub.datah3$gene_id <- rownames(sub.datah3)
+
+sub.datah4 <- r.datah4[common.genes, sub4]
+sub.datah4$gene_id <- rownames(sub.datah4)
+
+all.sub <- Reduce(x=list("b1"=sub.datah1, "b2"=sub.datah2,
+                         "b3"=sub.datah3, "b4"=sub.datah4),
+                  f=function(x, y) merge(x, y, by='gene_id'))
+rownames(all.sub) <- all.sub$gene_id
+all.sub <- all.sub[, 2:dim(all.sub)[2]]
+
+# merge uncorrected data based on gene IDs
+r.datah1$gene_id <- rownames(r.datah1)
+r.datah2$gene_id <- rownames(r.datah2)
+r.datah3$gene_id <- rownames(r.datah3)
+r.datah4$gene_id <- rownames(r.datah4)
+
+raw.all <- Reduce(x=list("b1"=r.datah1, "b2"=r.datah2,
+                         "b3"=r.datah3, "b4"=r.datah4),
+                  f=function(x, y) merge(x, y, by='gene_id'))
+rownames(raw.all) <- raw.all$gene_id
+raw.all <- raw.all[, 2:dim(raw.all)[2]]
 
 # take union of all hvgs together
 all.hvgs <- unique(c(HVG1, HVG2, HVG3, HVG4))
 common.hvgs <- intersect(HVG1, intersect(HVG2, intersect(HVG3, HVG4)))
-
-# sample 1000 cells from each batch for t-SNE plotting for computational reasons
-# set.seed(2)
-#samples1 <- sample(1:dim(datah1)[2], 1000) 
-#samples2 <- sample(1:dim(datah2)[2], 1000)
-#samples3 <- sample(1:dim(datah3)[2], 1000)
-#samples4 <- sample(1:dim(datah4)[2], 1000)
 allsamples <- c(samples1, samples2, samples3, samples4)
 
 # tidy cell type to just keep the major lineages
@@ -217,20 +252,61 @@ celltypes[grepl(celltypes, pattern="PSC")] <- "other"
 # celltypes[celltypes == "gamm"] <- "gamma"
 # celltypes[celltypes == "psc "] <- "other"
 
+# sub sample the cell types
+sub.type1 <- meta1$CellType[meta1$Sample %in% sub1]
+sub.type2 <- meta2$CellType[meta2$Sample %in% sub2]
+sub.type3 <- meta3$CellType[meta3$Sample %in% sub3]
+sub.type4 <- meta4$CellType[meta4$Sample %in% sub4]
+
+subtypes <- c(sub.type1, sub.type2, sub.type3, sub.type4)
+subtypes[subtypes == "PP"] <- "Gamma"
+subtypes[grepl(subtypes, pattern="Mesenchyme")] <- "other"
+subtypes[grepl(subtypes, pattern="Co-ex")] <- "other"
+subtypes[grepl(subtypes, pattern="Endo")] <- "other"
+subtypes[grepl(subtypes, pattern="Epsi")] <- "other"
+subtypes[grepl(subtypes, pattern="Mast")] <- "other"
+subtypes[grepl(subtypes, pattern="MHC")] <- "other"
+subtypes[grepl(subtypes, pattern="Uncl")] <- "other"
+subtypes[grepl(subtypes, pattern="Not")] <- "other"
+subtypes[grepl(subtypes, pattern="PSC")] <- "other"
+
+all.meta$CellType[all.meta$CellType == "PP"] <- "Gamma"
+all.meta$CellType[grepl(all.meta$CellType, pattern="Mesenchyme")] <- "other"
+all.meta$CellType[grepl(all.meta$CellType, pattern="Co-ex")] <- "other"
+all.meta$CellType[grepl(all.meta$CellType, pattern="Endo")] <- "other"
+all.meta$CellType[grepl(all.meta$CellType, pattern="Epsi")] <- "other"
+all.meta$CellType[grepl(all.meta$CellType, pattern="Mast")] <- "other"
+all.meta$CellType[grepl(all.meta$CellType, pattern="MHC")] <- "other"
+all.meta$CellType[grepl(all.meta$CellType, pattern="Uncl")] <- "other"
+all.meta$CellType[grepl(all.meta$CellType, pattern="Not")] <- "other"
+all.meta$CellType[grepl(all.meta$CellType, pattern="PSC")] <- "other"
+
 # check cell types and samples are the same length
 length(allsamples) == length(celltypes)
 
+# check subsamples cell types are the same length as the subsampled IDs
+length(subtypes) == length(subsamples)
+
 # setup the matrix of highly variable gene expression across all cells
 # this needs to drop any all-zero rows/columns
-raw.hvg <- raw.all[rownames(raw.all) %in% common.hvgs, ]
+raw.hvg <- raw.all[rownames(raw.all) %in% all.hvgs, ]
+sub.hvg <- all.sub[rownames(all.sub) %in% all.hvgs, ]
 
 # get a vector of study IDs
 batch.id <- c(meta1$Study, meta2$Study, meta3$Study, meta4$Study)
+sub.batch <- c(meta1$Study[meta1$Sample %in% sub1],
+               meta2$Study[meta2$Sample %in% sub2],
+               meta3$Study[meta3$Sample %in% sub3],
+               meta4$Study[meta4$Sample %in% sub4])
 
 ##### set cell type colorings
 allcolors <- labels2colors(celltypes)
 allcolors[allcolors == "red"] <- "deeppink"
 allcolors[allcolors == "yellow"] <- "orange1" # "darkgoldenrod1"
+
+subcolours <- labels2colors(subtypes)
+subcolours[subcolours == "red"] <- "deeppink"
+subcolours[subcolours == "yellow"] <- "orange1"
 
 N <- c(1000, 2000, 3000, 4000)
 
@@ -241,44 +317,59 @@ N <- c(1000, 2000, 3000, 4000)
 #### Uncorrected data 
 # this doesn't need to be a distance matrix!
 #all.dists2.unc <- as.matrix(dist(t(raw.all[all.hvgs, allsamples])))
+all.dists2.unc <- as.matrix(dist(t(sub.hvg)))
+all.dists2.unc <- as.matrix(dist(t(all.sub)))
+
 par(mfrow=c(1, 1))
 
 set.seed(0)
-tsne.unc <- Rtsne(t(raw.all), perplexity = 50)
+tsne.unc <- Rtsne(all.dists2.unc, distance=TRUE, perplexity = 30)
 
 # input and output order are the same
 unc.tsne <- data.frame(tsne.unc$Y)
 colnames(unc.tsne) <- c("Dim1", "Dim2")
-unc.tsne$Samples <- allsamples
-unc.tsne$CellType <- celltypes
-unc.tsne$Study <- batch.id
-unc.tsne$CellColour <- allcolors
-  
-png(file="unc4321.png", width=900, height=700)
-par(mfrow=c(1,1), mar=c(6,6,4,2), cex.axis=2, cex.main=3, cex.lab=2.5)
+unc.tsne$Sample <- colnames(sub.hvg)
+unc.merge <- merge(unc.tsne, all.meta, by='Sample')
+cell.colors <- unique(allcolors)
+names(cell.colors) <- unique(unc.merge$CellType)
 
-# create a plot with colour as cell type and shape as batch
-plot(unc.tsne$Dim1,
-     unc.tsne$Dim2,
-     pch=c(rep(3, dim(unc.tsne[unc.tsne$Study == "GSE81076",])[2]),
-           rep(18, dim(unc.tsne[unc.tsne$Study == "GSE85241",])[2]),
-           rep(1, dim(unc.tsne[unc.tsne$Study == "GSE86473",])[2]),
-           rep(4, dim(unc.tsne[unc.tsne$Study == "E-MTAB-5061",])[2])),
-     cex=1, 
-     col=alpha(unc.tsne$CellColour, 0.6),
-     main="Uncorrected", xlab="tSNE 1", ylab="tSNE 2")
+ggplot(unc.merge, aes(x=Dim1, y=Dim2, colour=Study, shape=CellType)) +
+  geom_point(size=2) + theme_classic()
+
+ggplot(unc.merge, aes(x=Dim1, y=Dim2, colour=CellType, shape=Study)) +
+  geom_point(size=1) + theme_classic() +
+  scale_colour_manual(values=cell.colors) +
+  scale_y_continuous(limits=c(-50, 50)) +
+  scale_x_continuous(limits=c(-50, 50))
+
+  
+# png(file="unc4321.png", width=900, height=700)
+# par(mfrow=c(1,1), mar=c(6,6,4,2), cex.axis=2, cex.main=3, cex.lab=2.5)
+# 
+# # create a plot with colour as cell type and shape as batch
+# plot(unc.tsne$Dim1,
+#      unc.tsne$Dim2,
+#      pch=c(rep(3, dim(unc.tsne[unc.tsne$Study == "GSE81076",])[2]),
+#            rep(18, dim(unc.tsne[unc.tsne$Study == "GSE85241",])[2]),
+#            rep(1, dim(unc.tsne[unc.tsne$Study == "GSE86473",])[2]),
+#            rep(4, dim(unc.tsne[unc.tsne$Study == "E-MTAB-5061",])[2])),
+#      cex=1, 
+#      col=alpha(unc.tsne$CellColour, 0.6),
+#      main="Uncorrected", xlab="tSNE 1", ylab="tSNE 2")
+
 
 # points(tsne.unc$Y[(N[1]+1):N[2], 1], tsne.unc$Y[(N[1]+1):N[2], 2], pch=18,cex=4, col=alpha(allcolors[(N[1]+1):N[2]], 0.6))
 # points(tsne.unc$Y[(N[2]+1):N[3], 1], tsne.unc$Y[(N[2]+1):N[3], 2], pch=1,cex=4, col=alpha(allcolors[(N[2]+1):N[3]], 0.6))
 # points(tsne.unc$Y[(N[3]+1):N[4], 1], tsne.unc$Y[(N[3]+1):N[4], 2], pch=4,cex=4, col=alpha(allcolors[(N[3]+1):N[4]], 0.6))
-dev.off()
+# dev.off()
 
 ### MNN batch correction
-#inquiry_genes <- row.names(datah4)
-Xmnn <- mnnCorrect(r.datah1, r.datah2, r.datah3, r.datah4,
-     	#inquiry.genes=inquiry_genes,
-     	hvg.genes=all.hvgs, k=20, sigma=0.1,
-     	cos.norm=TRUE, svd.dim=0) # batch correction is throwing an error because of non-numeric values?
+Xmnn <- mnnCorrect(as.matrix(r.datah1),
+                   as.matrix(r.datah2),
+                   as.matrix(r.datah3),
+                   as.matrix(r.datah4),
+     	subset.row=all.hvgs, k=20, sigma=0.1,
+     	cos.norm=TRUE)
 
 corre <- cbind(Xmnn$corrected[[1]], Xmnn$corrected[[2]], Xmnn$corrected[[3]], Xmnn$corrected[[4]])
 all.dists2.c <- as.matrix(dist(t(corre[HVG, allsamples])))

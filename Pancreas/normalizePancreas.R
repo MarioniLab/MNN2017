@@ -4,6 +4,8 @@
 
 library(scran)
 library(biomaRt)
+library(limSolve)
+library(scater)
 
 ##############
 ## GSE81076 ##
@@ -43,7 +45,6 @@ gse81076.df$gene <- gsub(gse81076.df$gene,
 gse81076.df <- gse81076.df[!duplicated(gse81076.df$gene), ]
 
 rownames(gse81076.df) <- gse81076.df$gene
-gse81076.gene_ids <- gse81076.df$gene
 
 # remove the gene ID column for downstream normalization
 gse81076.df <- gse81076.df[, -1]
@@ -56,22 +57,27 @@ gse81076.nz <- gse81076.df[keep_genes, ]
 cell_sparsity <- apply(gse81076.nz == 0, MARGIN = 2, sum)/dim(gse81076.nz)[1]
 keep_cells <- cell_sparsity < 0.9
 gse81076.nz <- gse81076.nz[, keep_cells]
+gse81076.nz <- apply(gse81076.nz, 2, as.integer)
+
 
 # use the spike in genes to estimate size factors for normalization
+# all values show be non-negative integers
 spikes <- grepl(rownames(gse81076.nz), pattern='ERCC')
 sce <- newSCESet(countData = gse81076.nz)
 sce <- calculateQCMetrics(sce, feature_controls=list(Spikes=spikes))
-setSpike(sce) <- 'Spikes'
+isSpike(sce) <- spikes
 
 clusters <- quickCluster(sce, get.spikes=TRUE, min.size=120)
 sce <- computeSumFactors(sce, sizes=c(10, 20, 40, 60), positive=T,
-                         assay='counts', clusters=clusters)
+                         assay.type='counts', clusters=clusters)
+summary(sizeFactors(sce))
 sce <- normalize(sce)
 
 gse81076.norm <- data.frame(exprs(sce))
-gse81076.norm$gene_id <- rownames(gse81076.norm)
+
+gse81076.norm$gene_id <- rownames(gse81076.df[keep_genes, ])
 gse81076.norm$gene_id <- gsub(gse81076.norm$gene_id,
-                              pattern="__chr[0-9]+", replacement="")
+                              pattern="__chr[0-9X]+", replacement="")
 
 write.table(gse81076.norm, sep='\t',
              file='Pancreas/Data/GSE81076_SFnorm.tsv',
@@ -127,7 +133,7 @@ write.table(gse85241.meta,
 # remove duplicated gene IDs
 
 gse85241.df$gene_id <- gsub(gse85241.df$gene_id,
-                            pattern="__chr[0-9]+", replacement="")
+                            pattern="__chr[0-9X]+", replacement="")
 gse85241.df <- gse85241.df[!duplicated(gse85241.df$gene_id), ]
 rownames(gse85241.df) <- gse85241.df$gene_id
 gse85241.df <- gse85241.df[, 1:(dim(gse85241.df)[2]-1)]
@@ -141,20 +147,21 @@ cell_sparsity <- apply(gse85241.nz == 0, MARGIN = 2, sum)/dim(gse85241.nz)[1]
 keep_cells <- cell_sparsity < 0.9
 dim(gse85241.nz[, keep_cells])
 gse85241.nz <- gse85241.nz[, keep_cells]
+gse85241.nz <- apply(gse85241.nz, 2, as.integer)
 
 spikes <- grepl(rownames(gse85241.nz), pattern='ERCC')
 sce <- newSCESet(countData = gse85241.nz)
 sce <- calculateQCMetrics(sce, feature_controls=list(Spikes=spikes))
-setSpike(sce) <- 'Spikes'
+isSpike(sce) <- spikes
 
 clusters <- quickCluster(sce, get.spikes=TRUE, min.size=120)
 sce <- computeSumFactors(sce, sizes=c(10, 20, 40, 60), positive=T,
-                         assay='counts', clusters=clusters)
+                         assay.type='counts', clusters=clusters)
 summary(sizeFactors((sce)))
 
 sce <- normalize(sce)
 gse85241.norm <- data.frame(exprs(sce))
-gse85241.norm$gene_id <- rownames(gse85241.norm)
+gse85241.norm$gene_id <- rownames(gse85241.df[keep_genes, ])
 
 write.table(gse85241.norm, sep='\t',
             file='Pancreas/Data/GSE85241_SFnorm.tsv',
@@ -241,18 +248,18 @@ cell_sparsity <- apply(gse86473.nz == 0, MARGIN = 2, sum)/dim(gse86473.nz)[1]
 keep_cells <- cell_sparsity < 0.9
 dim(gse86473.nz[, keep_cells])
 gse86473.nz <- gse86473.nz[, keep_cells]
+gse86473.nz <- apply(gse86473.nz, 2, as.integer)
 
 sce <- newSCESet(countData = gse86473.nz)
 sce <- calculateQCMetrics(sce)
-
 clusters <- quickCluster(sce, min.size=120)
 sce <- computeSumFactors(sce, sizes=c(10, 20, 40, 60), positive=T,
-                         assay='counts', clusters=clusters)
+                         assay.type='counts', clusters=clusters)
 summary(sizeFactors((sce)))
 
 sce <- normalize(sce)
 gse86473.norm <- data.frame(exprs(sce))
-gse86473.norm$gene_id <- rownames(gse86473.norm)
+gse86473.norm$gene_id <- rownames(gse86473.df[keep_genes, ])
 
 write.table(gse86473.norm, sep='\t',
             file='Pancreas/Data/GSE86473_SFnorm.tsv',
@@ -261,7 +268,6 @@ write.table(gse86473.norm, sep='\t',
 #################
 ## E-MTAB-5061 ##
 #################
-setwd("~/src/MNN2017")
 # clear environment and invoke garbage collector
 rm(list=ls())
 gc()
@@ -335,19 +341,20 @@ cell_sparsity <- apply(emtab5061.nz == 0, MARGIN = 2, sum)/dim(emtab5061.nz)[1]
 keep_cells <- cell_sparsity < 0.8
 dim(emtab5061.nz[, keep_cells])
 emtab5061.nz <- emtab5061.nz[, keep_cells]
+emtab5061.nz <- apply(emtab5061.nz, 2, as.integer)
 
 spikes <- grepl(x=rownames(emtab5061.nz), pattern="ERCC")
 sce <- newSCESet(countData = emtab5061.nz)
 sce <- calculateQCMetrics(sce, feature_controls=list(Spikes=spikes))
-setSpike(sce) <- "Spikes"
+isSpike(sce) <- spikes
 
 clusters <- quickCluster(sce, min.size=120)
 sce <- computeSumFactors(sce, sizes=c(10, 20, 40, 60), positive=T,
-                         assay='counts', clusters=clusters)
+                         assay.type='counts', clusters=clusters)
 summary(sizeFactors((sce)))
 sce <- normalize(sce)
 emtab.norm <- data.frame(exprs(sce))
-emtab.norm$gene_id <- rownames(emtab.norm)
+emtab.norm$gene_id <- rownames(emtab5061.df[keep_genes, ])
 
 write.table(emtab.norm,
             file="Pancreas/Data/E-MTAB-5061_SFnorm.tsv",
