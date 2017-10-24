@@ -55,14 +55,14 @@ keep_genes <- gene_sparsity < 0.9
 gse81076.nz <- gse81076.df[keep_genes, ]
 
 cell_sparsity <- apply(gse81076.nz == 0, MARGIN = 2, sum)/dim(gse81076.nz)[1]
-keep_cells <- cell_sparsity < 0.9
+keep_cells <- cell_sparsity < 0.8
 gse81076.nz <- gse81076.nz[, keep_cells]
 gse81076.nz <- apply(gse81076.nz, 2, as.integer)
 
-
 # use the spike in genes to estimate size factors for normalization
 # all values show be non-negative integers
-spikes <- grepl(rownames(gse81076.nz), pattern='ERCC')
+spikes <- grepl(rownames(gse81076.df[keep_genes, ]),
+                pattern='ERCC')
 sce <- newSCESet(countData = gse81076.nz)
 sce <- calculateQCMetrics(sce, feature_controls=list(Spikes=spikes))
 isSpike(sce) <- spikes
@@ -144,12 +144,13 @@ keep_genes <- gene_sparsity < 0.9
 gse85241.nz <- gse85241.df[keep_genes, ]
 
 cell_sparsity <- apply(gse85241.nz == 0, MARGIN = 2, sum)/dim(gse85241.nz)[1]
-keep_cells <- cell_sparsity < 0.9
+keep_cells <- cell_sparsity < 0.8
 dim(gse85241.nz[, keep_cells])
 gse85241.nz <- gse85241.nz[, keep_cells]
 gse85241.nz <- apply(gse85241.nz, 2, as.integer)
 
-spikes <- grepl(rownames(gse85241.nz), pattern='ERCC')
+spikes <- grepl(rownames(gse85241.df[keep_genes, ]),
+                pattern='ERCC')
 sce <- newSCESet(countData = gse85241.nz)
 sce <- calculateQCMetrics(sce, feature_controls=list(Spikes=spikes))
 isSpike(sce) <- spikes
@@ -157,7 +158,7 @@ isSpike(sce) <- spikes
 clusters <- quickCluster(sce, get.spikes=TRUE, min.size=120)
 sce <- computeSumFactors(sce, sizes=c(10, 20, 40, 60), positive=T,
                          assay.type='counts', clusters=clusters)
-summary(sizeFactors((sce)))
+summary(sizeFactors(sce))
 
 sce <- normalize(sce)
 gse85241.norm <- data.frame(exprs(sce))
