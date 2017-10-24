@@ -30,6 +30,19 @@ plotFUN <- function(fname, Y, subset=NULL, ...) {
     dev.off()
 }
 
+plotFUNb <- function(fname, Y, subset=NULL, ...) {
+  if (is.null(subset)) {
+    subset <- seq_len(nrow(Y))
+  }
+  png(fname,width=900,height=700)
+  par(mfrow=c(1,1),mar=c(6,6,4,2),cex.axis=2,cex.main=3,cex.lab=2.5)
+  plot(Y[,1], Y[,2], cex=2,
+       pch=ifelse(first.batch, 21, 1)[subset], 
+       col=ifelse(first.batch, "black", batch)[subset],
+       bg=batch[subset], ...,  xlab="tSNE 1",ylab="tSNE 2")
+  dev.off()
+}
+
 # Only keeping common cell types for PCA.
 pca.retain <- celltypes %in% c("MEP", "GMP", "CMP") 
 
@@ -43,8 +56,9 @@ t.unc <- t(X.unc)
 require(Rtsne)
 set.seed(0)
 all.dists.unc <- as.matrix(dist(t.unc))
-tsne.unc <- Rtsne(all.dists.unc, is_distance=TRUE)#, perplexity = 90)
+tsne.unc <- Rtsne(all.dists.unc, is_distance=TRUE, perplexity = 90)
 plotFUN("results/uncFA.png", tsne.unc$Y, main="Uncorrected")
+plotFUNb("results/uncFAb.png", tsne.unc$Y, main="Uncorrected")
 
 rm(all.dists.unc)
 gc()
@@ -59,15 +73,16 @@ gc()
 ######################## 
 # Performing the correction with MNN (turned down the sigma to improve mixing).
 
-mnn.out <- mnnCorrect(logDataF3, logDataA3, k=20, sigma=0.01, cos.norm=TRUE, svd.dim=2)
+mnn.out <- mnnCorrect(logDataF3, logDataA3, k=20, sigma=0.1, cos.norm=TRUE, svd.dim=2)
 X.mnn <- cbind(mnn.out$corrected[[1]], mnn.out$corrected[[2]])
 t.mnn <- t(X.mnn)
 
 # Generating a t-SNE plot.
 set.seed(0)
 all.dists.mnn <- as.matrix(dist(t.mnn))
-tsne.mnn <- Rtsne(all.dists.mnn, is_distance=TRUE)#, perplexity = 90)
+tsne.mnn <- Rtsne(all.dists.mnn, is_distance=TRUE, perplexity = 90)
 plotFUN("results/mnnFA.png", tsne.mnn$Y, main="MNN")
+plotFUNb("results/mnnFAb.png", tsne.mnn$Y, main="MNN")
 
 rm(all.dists.mnn)
 gc()
@@ -89,8 +104,9 @@ t.lm <- t(X.lm)
 # Generating a t-SNE plot.
 set.seed(0)
 all.dists.lm <- as.matrix(dist(t.lm))
-tsne.lm <- Rtsne(all.dists.lm, is_distance=TRUE)#, perplexity = 90)
+tsne.lm <- Rtsne(all.dists.lm, is_distance=TRUE, perplexity = 90)
 plotFUN("results/lmfitFA.png", tsne.lm$Y, main="limma")
+plotFUNb("results/lmfitFAb.png", tsne.lm$Y, main="limma")
 
 rm(all.dists.lm)
 gc()
@@ -113,8 +129,9 @@ t.combat <- t(X.combat)
 # Generating a t-SNE plot.
 set.seed(0)
 all.dists.combat <- as.matrix(dist(t.combat))
-tsne.combat<-Rtsne(all.dists.combat, is_distance=TRUE)#,perplexity = 90)
+tsne.combat<-Rtsne(all.dists.combat, is_distance=TRUE,perplexity = 90)
 plotFUN("results/combatFA.png", tsne.combat$Y, main="ComBat")
+plotFUNb("results/combatFAb.png", tsne.combat$Y, main="ComBat")
 
 rm(all.dists.combat)
 gc()
