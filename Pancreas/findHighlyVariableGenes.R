@@ -3,7 +3,6 @@
 # are in the appropriate directories.  If these files do not exist, then please run normalizePancreas.R
 # first, or simply use source("Pancreas/normalizePancreas.R").  The objects from that script will NOT
 # be retained in the environment if you use this approach, so files will be explicitly loaded.
-library(statmod)
 
 # define a convenience function for HVG definition
 find_hvg <- function(dataframe, plot=FALSE, p.threshold=1e-2, return.ranks=FALSE){
@@ -26,7 +25,7 @@ find_hvg <- function(dataframe, plot=FALSE, p.threshold=1e-2, return.ranks=FALSE
   recip.means <- 1/means
   recip.means[is.infinite(recip.means)] <- 0
   
-  useForFit <- recip.means <= 1
+  useForFit <- recip.means <= 0.1
   
   # fit with a gamma-distributed GLM
   fit <- glmgam.fit(cbind(a0 = 1, a1tilde=recip.means[!useForFit]), cv2[!useForFit])
@@ -87,10 +86,9 @@ gse81076.norm <- read.table("Pancreas/Data/GSE81076_SFnorm.tsv",
 # remove gene id column for hvg discovery, last column
 rownames(gse81076.norm) <- gse81076.norm$gene_id
 
-
 # output is a boolean vector of the same order as the input matrix
 gse81076.HVG <- find_hvg(dataframe=gse81076.norm[, 1:(dim(gse81076.norm)[2]-1)], 
-                         p.threshold=1e-2, plot=FALSE, return.ranks=FALSE)
+                         p.threshold=0.05, plot=TRUE, return.ranks=FALSE)
 
 # select the highly variable genes from the input dataframe column 'gene id'
 gse81076.hvg_df <- cbind.data.frame(names(gse81076.HVG)[gse81076.HVG])
@@ -112,7 +110,7 @@ rownames(gse85241.norm) <- gse85241.norm$gene_id
 
 # output is a boolean vector of the same order as the input matrix
 gse85241.HVG <- find_hvg(dataframe=gse85241.norm[, 1:(dim(gse85241.norm)[2]-1)], 
-                         p.threshold=1e-2, plot=FALSE, return.ranks=FALSE)
+                         p.threshold=0.05, plot=FALSE, return.ranks=FALSE)
 
 # select the highly variable genes from the input dataframe column 'gene id'
 gse85241.hvg_df <- cbind.data.frame(names(gse85241.HVG)[gse85241.HVG])
@@ -135,7 +133,7 @@ rownames(gse86473.norm) <- gse86473.norm$gene_id
 
 # output is a boolean vector of the same order as the input matrix
 gse86473.HVG <- find_hvg(dataframe=gse86473.norm[, 1:(dim(gse86473.norm)[2]-1)], 
-                         p.threshold=1e-2, plot=FALSE, return.ranks=FALSE)
+                         p.threshold=0.05, plot=FALSE, return.ranks=FALSE)
 
 # select the highly variable genes from the input dataframe column 'gene id'
 gse86473.hvg_df <- cbind.data.frame(names(gse86473.HVG)[gse86473.HVG])
@@ -157,7 +155,7 @@ rownames(emtab5061.norm) <- emtab5061.norm$gene_id
 
 # output is a boolean vector of the same order as the input matrix
 emtab5061.HVG <- find_hvg(dataframe=emtab5061.norm[, 1:(dim(emtab5061.norm)[2]-1)], 
-                         p.threshold=1e-2, plot=FALSE, return.ranks=FALSE)
+                         p.threshold=0.05, plot=FALSE, return.ranks=FALSE)
 
 # select the highly variable genes from the input dataframe column 'gene id'
 emtab5061.hvg_df <- cbind.data.frame(names(emtab5061.HVG)[emtab5061.HVG])

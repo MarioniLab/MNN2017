@@ -317,18 +317,18 @@ N <- c(1000, 2000, 3000, 4000)
 #### Uncorrected data 
 # this doesn't need to be a distance matrix!
 #all.dists2.unc <- as.matrix(dist(t(raw.all[all.hvgs, allsamples])))
-all.dists2.unc <- as.matrix(dist(t(sub.hvg)))
-all.dists2.unc <- as.matrix(dist(t(all.sub)))
+#all.dists2.unc <- as.matrix(dist(t(sub.hvg)))
+all.dists2.unc <- as.matrix(t(raw.hvg))
 
 par(mfrow=c(1, 1))
 
 set.seed(0)
-tsne.unc <- Rtsne(all.dists2.unc, distance=TRUE, perplexity = 30)
+tsne.unc <- Rtsne(all.dists2.unc, distance=FALSE, perplexity = 100)
 
 # input and output order are the same
 unc.tsne <- data.frame(tsne.unc$Y)
 colnames(unc.tsne) <- c("Dim1", "Dim2")
-unc.tsne$Sample <- colnames(sub.hvg)
+unc.tsne$Sample <- colnames(raw.hvg)
 unc.merge <- merge(unc.tsne, all.meta, by='Sample')
 cell.colors <- unique(allcolors)
 names(cell.colors) <- unique(unc.merge$CellType)
@@ -341,7 +341,6 @@ ggplot(unc.merge, aes(x=Dim1, y=Dim2, colour=CellType, shape=Study)) +
   scale_colour_manual(values=cell.colors) +
   scale_y_continuous(limits=c(-50, 50)) +
   scale_x_continuous(limits=c(-50, 50))
-
   
 # png(file="unc4321.png", width=900, height=700)
 # par(mfrow=c(1,1), mar=c(6,6,4,2), cex.axis=2, cex.main=3, cex.lab=2.5)
@@ -364,101 +363,168 @@ ggplot(unc.merge, aes(x=Dim1, y=Dim2, colour=CellType, shape=Study)) +
 # dev.off()
 
 ### MNN batch correction
-Xmnn <- mnnCorrect(as.matrix(r.datah1),
-                   as.matrix(r.datah2),
-                   as.matrix(r.datah3),
-                   as.matrix(r.datah4),
-     	subset.row=all.hvgs, k=20, sigma=0.1,
-     	cos.norm=TRUE)
+# HVGs need to be a subset of the genes commonly expressed across all data sets
+hvg.common <- all.hvgs[all.hvgs %in% common.genes]
+Xmnn <- mnnCorrect(as.matrix(r.datah1[, 1:(dim(r.datah1)[2]-1)]),
+                   as.matrix(r.datah2[, 1:(dim(r.datah2)[2]-1)]),
+                   as.matrix(r.datah3[, 1:(dim(r.datah3)[2]-1)]),
+                   as.matrix(r.datah4[, 1:(dim(r.datah4)[2]-1)]),
+                   subset.row=hvg.common,
+                   k=30, sigma=0.5, svdim=0,
+                   cos.norm=TRUE)
 
-corre <- cbind(Xmnn$corrected[[1]], Xmnn$corrected[[2]], Xmnn$corrected[[3]], Xmnn$corrected[[4]])
-all.dists2.c <- as.matrix(dist(t(corre[HVG, allsamples])))
+# corre <- cbind(Xmnn$corrected[[1]], Xmnn$corrected[[2]], Xmnn$corrected[[3]], Xmnn$corrected[[4]])
+corre <- do.call(cbind.data.frame, Xmnn$corrected)
+#all.dists2.c <- as.matrix(dist(t(corre[HVG, allsamples])))
+all.dists2.c <- as.matrix(t(corre))
 
 set.seed(0)
-tsne.c <- Rtsne(all.dists2.c, is_distance=TRUE)#, perplexity = 5)
+tsne.c <- Rtsne(all.dists2.c, is_distance=FALSE, perplexity = 100)
 
-png(file="mnn4321_s.png", width=900, height=700)
-par(mfrow=c(1,1), mar=c(6,6,4,2), cex.axis=2, cex.main=3, cex.lab=2.5)
-plot(tsne.c$Y[1:N[1],1], tsne.c$Y[1:N[1],2], pch=3, cex=4, col=alpha(allcolors[1:N[1]], 0.6),
-			 main="MNN corrected", xlim=c(-25,25), ylim=c(-25,20), xlab="tSNE 1", ylab="tSNE 2")
-points(tsne.c$Y[(N[1]+1):N[2],1], tsne.c$Y[(N[1]+1):N[2],2], pch=18,cex=4, col=alpha(allcolors[(N[1]+1):N[2]], 0.6))
-points(tsne.c$Y[(N[2]+1):N[3],1], tsne.c$Y[(N[2]+1):N[3],2], pch=1,cex=4, col=alpha(allcolors[(N[2]+1):N[3]], 0.6))
-points(tsne.c$Y[(N[3]+1):N[4],1], tsne.c$Y[(N[3]+1):N[4],2], pch=4,cex=4, col=alpha(allcolors[(N[3]+1):N[4]], 0.6))
-dev.off()
+# input and output order are the same
+mnn.tsne <- data.frame(tsne.c$Y)
+colnames(mnn.tsne) <- c("Dim1", "Dim2")
+mnn.tsne$Sample <- colnames(raw.hvg)
+mnn.merge <- merge(mnn.tsne, all.meta, by='Sample')
+cell.colors <- unique(allcolors)
+names(cell.colors) <- unique(mnn.merge$CellType)
+
+ggplot(mnn.merge, aes(x=Dim1, y=Dim2, colour=Study, shape=CellType)) +
+  geom_point(size=1) + theme_classic() +
+  scale_y_continuous(limits=c(-50, 50)) +
+  scale_x_continuous(limits=c(-50, 50))
+
+ggplot(mnn.merge, aes(x=Dim1, y=Dim2, colour=CellType, shape=Study)) +
+  geom_point(size=1) + theme_classic() +
+  scale_colour_manual(values=cell.colors) +
+  scale_y_continuous(limits=c(-50, 50)) +
+  scale_x_continuous(limits=c(-50, 50))
+
+
+# png(file="mnn4321_s.png", width=900, height=700)
+# par(mfrow=c(1,1), mar=c(6,6,4,2), cex.axis=2, cex.main=3, cex.lab=2.5)
+# plot(tsne.c$Y[1:N[1],1], tsne.c$Y[1:N[1],2], pch=3, cex=4, col=alpha(allcolors[1:N[1]], 0.6),
+# 			 main="MNN corrected", xlim=c(-25,25), ylim=c(-25,20), xlab="tSNE 1", ylab="tSNE 2")
+# points(tsne.c$Y[(N[1]+1):N[2],1], tsne.c$Y[(N[1]+1):N[2],2], pch=18,cex=4, col=alpha(allcolors[(N[1]+1):N[2]], 0.6))
+# points(tsne.c$Y[(N[2]+1):N[3],1], tsne.c$Y[(N[2]+1):N[3],2], pch=1,cex=4, col=alpha(allcolors[(N[2]+1):N[3]], 0.6))
+# points(tsne.c$Y[(N[3]+1):N[4],1], tsne.c$Y[(N[3]+1):N[4],2], pch=4,cex=4, col=alpha(allcolors[(N[3]+1):N[4]], 0.6))
+# dev.off()
 
 ### limma batch correction
 library(limma)
-Xlm <- removeBatchEffect(raw.all, factor(colnames(raw.all)))
-all.dists2.lm <- as.matrix(dist(t(Xlm[HVG, allsamples])))
+# construct a factor containing the batch IDs
+batch.vector <- factor(all.meta$Study)
+
+length(batch.vector) == dim(raw.hvg)[2]
+
+Xlm <- removeBatchEffect(raw.hvg, batch.vector)
+all.dists2.lm <- as.matrix(t(Xlm))
 
 set.seed(0)
-tsne.lm<-Rtsne(all.dists2.lm, is_distance=TRUE)#, perplexity = 0.9)
-png(file="lmfit4321.png", width=900, height=700)
-par(mfrow=c(1,1), mar=c(6,6,4,2), cex.axis=2, cex.main=3, cex.lab=2.5)
-plot(tsne.lm$Y[1:N[1],1], tsne.lm$Y[1:N[1],2], pch=3,cex=4, col=alpha(allcolors[1:N[1]], 0.6),
-			  main="limma corrected", xlim=c(-15,20), ylim=c(-25,20), xlab="tSNE 1" ,ylab="tSNE 2")
-points(tsne.lm$Y[(N[1]+1):N[2], 1], tsne.lm$Y[(N[1]+1):N[2], 2], pch=18,cex=4, col=alpha(allcolors[(N[1]+1):N[2]], 0.6))
-points(tsne.lm$Y[(N[2]+1):N[3], 1], tsne.lm$Y[(N[2]+1):N[3], 2], pch=1,cex=4, col=alpha(allcolors[(N[2]+1):N[3]], 0.6))
-points(tsne.lm$Y[(N[3]+1):N[4], 1], tsne.lm$Y[(N[3]+1):N[4], 2], pch=4,cex=4, col=alpha(allcolors[(N[3]+1):N[4]], 0.6))
-dev.off()
+tsne.lm <- Rtsne(all.dists2.lm, is_distance=FALSE, perplexity = 100)
+
+# input and output order are the same
+lm.tsne <- data.frame(tsne.lm$Y)
+colnames(lm.tsne) <- c("Dim1", "Dim2")
+lm.tsne$Sample <- colnames(raw.hvg)
+lm.merge <- merge(lm.tsne, all.meta, by='Sample')
+cell.colors <- unique(allcolors)
+names(cell.colors) <- unique(lm.merge$CellType)
+
+ggplot(lm.merge, aes(x=Dim1, y=Dim2, colour=Study, shape=CellType)) +
+  geom_point(size=2) + theme_classic()
+
+ggplot(lm.merge, aes(x=Dim1, y=Dim2, colour=CellType, shape=Study)) +
+  geom_point(size=1) + theme_classic() +
+  scale_colour_manual(values=cell.colors) +
+  scale_y_continuous(limits=c(-50, 50)) +
+  scale_x_continuous(limits=c(-50, 50))
+
+
+# png(file="lmfit4321.png", width=900, height=700)
+# par(mfrow=c(1,1), mar=c(6,6,4,2), cex.axis=2, cex.main=3, cex.lab=2.5)
+# plot(tsne.lm$Y[1:N[1],1], tsne.lm$Y[1:N[1],2], pch=3,cex=4, col=alpha(allcolors[1:N[1]], 0.6),
+# 			  main="limma corrected", xlim=c(-15,20), ylim=c(-25,20), xlab="tSNE 1" ,ylab="tSNE 2")
+# points(tsne.lm$Y[(N[1]+1):N[2], 1], tsne.lm$Y[(N[1]+1):N[2], 2], pch=18,cex=4, col=alpha(allcolors[(N[1]+1):N[2]], 0.6))
+# points(tsne.lm$Y[(N[2]+1):N[3], 1], tsne.lm$Y[(N[2]+1):N[3], 2], pch=1,cex=4, col=alpha(allcolors[(N[2]+1):N[3]], 0.6))
+# points(tsne.lm$Y[(N[3]+1):N[4], 1], tsne.lm$Y[(N[3]+1):N[4], 2], pch=4,cex=4, col=alpha(allcolors[(N[3]+1):N[4]], 0.6))
+# dev.off()
 
 #### ComBat correction
 library(sva)
 
-Z <- colnames(raw.all)
-cleandat.combat <- ComBat(raw.all, Z, mod=NULL, prior.plots=FALSE)
+cleandat.combat <- ComBat(raw.hvg, all.meta$Study,
+                          mod=NULL, prior.plots=FALSE)
 
-all.dists.combat <- as.matrix(dist(t(cleandat.combat[HVG, allsamples])))
+all.dists.combat <- as.matrix(t(cleandat.combat))
 set.seed(0)
-tsne.combat <- Rtsne(all.dists.combat, is_distance=TRUE)
+tsne.combat <- Rtsne(all.dists.combat, is_distance=FALSE, perplexity=100)
 
-png(file="combat4321.png", width=900, height=700)
-par(mfrow=c(1,1), mar=c(6,6,4,2), cex.axis=2, cex.main=3, cex.lab=2.5)
-plot(tsne.combat$Y[1:N[1], 1], tsne.combat$Y[1:N[1],2], pch=3, cex=4, 
-			   col=alpha(allcolors[1:N[1]],0.6), 
-			   main="ComBat corrected", xlim=c(-12,15), ylim=c(-10,10),
-			   xlab="tSNE 1", ylab="tSNE 2")
-points(tsne.combat$Y[(N[1]+1):N[2],1], tsne.combat$Y[(N[1]+1):N[2],2],
-				       pch=18, cex=4, col=alpha(allcolors[(N[1]+1):N[2]], 0.6))
-points(tsne.combat$Y[(N[2]+1):N[3],1], tsne.combat$Y[(N[2]+1):N[3],2],
-				       pch=1, cex=4, col=alpha(allcolors[(N[2]+1):N[3]], 0.6))
-points(tsne.combat$Y[(N[3]+1):N[4],1], tsne.combat$Y[(N[3]+1):N[4],2],
-				       pch=4, cex=4, col=alpha(allcolors[(N[3]+1):N[4]], 0.6))
-#plot(tsne.combat$Y[,1],tsne.combat$Y[,2], pch=16, col=labels2colors(celltypes), main="ComBat corrected")
-dev.off()
+# input and output order are the same
+combat.tsne <- data.frame(tsne.combat$Y)
+colnames(combat.tsne) <- c("Dim1", "Dim2")
+combat.tsne$Sample <- colnames(raw.hvg)
+combat.merge <- merge(combat.tsne, all.meta, by='Sample')
+cell.colors <- unique(allcolors)
+names(cell.colors) <- unique(combat.merge$CellType)
+
+ggplot(combat.merge, aes(x=Dim1, y=Dim2, colour=Study, shape=CellType)) +
+  geom_point(size=2) + theme_classic()
+
+ggplot(combat.merge, aes(x=Dim1, y=Dim2, colour=CellType, shape=Study)) +
+  geom_point(size=1) + theme_classic() +
+  scale_colour_manual(values=cell.colors) +
+  scale_y_continuous(limits=c(-50, 50)) +
+  scale_x_continuous(limits=c(-50, 50))
+
+
+# png(file="combat4321.png", width=900, height=700)
+# par(mfrow=c(1,1), mar=c(6,6,4,2), cex.axis=2, cex.main=3, cex.lab=2.5)
+# plot(tsne.combat$Y[1:N[1], 1], tsne.combat$Y[1:N[1],2], pch=3, cex=4, 
+# 			   col=alpha(allcolors[1:N[1]],0.6), 
+# 			   main="ComBat corrected", xlim=c(-12,15), ylim=c(-10,10),
+# 			   xlab="tSNE 1", ylab="tSNE 2")
+# points(tsne.combat$Y[(N[1]+1):N[2],1], tsne.combat$Y[(N[1]+1):N[2],2],
+# 				       pch=18, cex=4, col=alpha(allcolors[(N[1]+1):N[2]], 0.6))
+# points(tsne.combat$Y[(N[2]+1):N[3],1], tsne.combat$Y[(N[2]+1):N[3],2],
+# 				       pch=1, cex=4, col=alpha(allcolors[(N[2]+1):N[3]], 0.6))
+# points(tsne.combat$Y[(N[3]+1):N[4],1], tsne.combat$Y[(N[3]+1):N[4],2],
+# 				       pch=4, cex=4, col=alpha(allcolors[(N[3]+1):N[4]], 0.6))
+# #plot(tsne.combat$Y[,1],tsne.combat$Y[,2], pch=16, col=labels2colors(celltypes), main="ComBat corrected")
+# dev.off()
 
 ### save results
 save(file="completedata_correcteds.RData", raw.all, Xmnn,
 					   Xlm, cleandat.combat, allsamples, celltypes)
-###### the legend
-png(file="leg_detailed4321.png", width=900, height=700)
-par(mfrow=c(1,1), mar=c(6,6,4,2), cex.axis=2, cex.main=3, cex.lab=2.5)
-plot(1, 2, pch=3, cex=4, col=alpha(allcolors[1],0.6),
-	main="legend", xlim=c(-20,30), ylim=c(-13,13), xlab="tSNE 1", ylab="tSNE 2")
-forleg <- table(celltypes,allcolors)
-leg.txt <- unique(celltypes[allsamples])
-legend("bottomright", "(x,y)", legend = leg.txt, col =unique(allcolors) , pch = 4,cex = 2.5,bty = "n",lwd = 3,lty=0)   #, trace = TRUE)
-legend("bottomleft", "(x,y)", legend = leg.txt, col =unique(allcolors) , pch = 1,cex = 2.5,bty = "n",lwd = 3,lty=0)   #, trace = TRUE)
-legend("topright", "(x,y)", legend = leg.txt, col =unique(allcolors) , pch = 18,cex = 2.5,bty = "n",lwd = 3,lty=0)   #, trace = TRUE)
-legend("topleft", "(x,y)", legend = leg.txt, col =unique(allcolors) , pch = 3,cex = 2.5,bty = "n",lwd = 3,lty=0)   #, trace = TRUE)
-dev.off()
+# ###### the legend
+# png(file="leg_detailed4321.png", width=900, height=700)
+# par(mfrow=c(1,1), mar=c(6,6,4,2), cex.axis=2, cex.main=3, cex.lab=2.5)
+# plot(1, 2, pch=3, cex=4, col=alpha(allcolors[1],0.6),
+# 	main="legend", xlim=c(-20,30), ylim=c(-13,13), xlab="tSNE 1", ylab="tSNE 2")
+# forleg <- table(celltypes,allcolors)
+# leg.txt <- unique(celltypes[allsamples])
+# legend("bottomright", "(x,y)", legend = leg.txt, col =unique(allcolors) , pch = 4,cex = 2.5,bty = "n",lwd = 3,lty=0)   #, trace = TRUE)
+# legend("bottomleft", "(x,y)", legend = leg.txt, col =unique(allcolors) , pch = 1,cex = 2.5,bty = "n",lwd = 3,lty=0)   #, trace = TRUE)
+# legend("topright", "(x,y)", legend = leg.txt, col =unique(allcolors) , pch = 18,cex = 2.5,bty = "n",lwd = 3,lty=0)   #, trace = TRUE)
+# legend("topleft", "(x,y)", legend = leg.txt, col =unique(allcolors) , pch = 3,cex = 2.5,bty = "n",lwd = 3,lty=0)   #, trace = TRUE)
+# dev.off()
 
-##################### write.table
-Ns <- c(ncol(datah4), ncol(datah3), ncol(datah2), ncol(datah1))
-correh4 <- corre[, 1:Ns[1]]
-correh3 <- corre[, (Ns[1] + 1):(Ns[1] + Ns[2])]
-correh2 <- corre[, (Ns[1] + Ns[2] + 1):(Ns[1] + Ns[2] + Ns[3])]
-correh1 <- corre[, (Ns[1] + Ns[2] + Ns[3] + 1):(Ns[1] + Ns[2] + Ns[3] + Ns[4])]
-
-colnames(correh4) <- celltype4
-colnames(correh3) <- celltype3
-colnames(correh2) <- celltype2
-colnames(correh1) <- celltype1
-
-colnames(correh4) <- colnames(datah4)
-colnames(correh3) <- colnames(datah3)
-colnames(correh2) <- colnames(datah2)
-colnames(correh1) <- colnames(datah1)
+# ##################### write.table
+# Ns <- c(ncol(datah4), ncol(datah3), ncol(datah2), ncol(datah1))
+# correh4 <- corre[, 1:Ns[1]]
+# correh3 <- corre[, (Ns[1] + 1):(Ns[1] + Ns[2])]
+# correh2 <- corre[, (Ns[1] + Ns[2] + 1):(Ns[1] + Ns[2] + Ns[3])]
+# correh1 <- corre[, (Ns[1] + Ns[2] + Ns[3] + 1):(Ns[1] + Ns[2] + Ns[3] + Ns[4])]
+# 
+# colnames(correh4) <- celltype4
+# colnames(correh3) <- celltype3
+# colnames(correh2) <- celltype2
+# colnames(correh1) <- celltype1
+# 
+# colnames(correh4) <- colnames(datah4)
+# colnames(correh3) <- colnames(datah3)
+# colnames(correh2) <- colnames(datah2)
+# colnames(correh1) <- colnames(datah1)
  
 write.table(file="C_Smartseq_GSE86473.txt", correh4, row.names=TRUE, col.names=TRUE, sep="\t", quote=FALSE)
 write.table(file="C_Smartseq_EMATB5061.txt", correh3, row.names=TRUE, col.names=TRUE, sep="\t", quote=FALSE)
@@ -467,7 +533,8 @@ write.table(file="C_CELseq_GSE81076.txt", correh1, row.names=TRUE, col.names=TRU
 ##########
 
 ########## compute Silhouette coefficients on t-SNE coordinates
-ct.fac <- factor(celltypes[allsamples])
+# ct.fac <- factor(celltypes[allsamples])
+ct.fac <- factor(all.meta$CellType)
 
 dd.unc <- as.matrix(dist(tsne.unc$Y)) 
 score_sil <- (cluster::silhouette(as.numeric(ct.fac), dd.unc))
@@ -476,7 +543,6 @@ sil_unc <- score_sil[, 3]  #for uncorrected data
 dd.c <- as.matrix(dist(tsne.c$Y))
 score_sil <- (cluster::silhouette(as.numeric(ct.fac), dd.c))
 sil_c<-score_sil[,3] #for MNN corrected data
-
 
 dd.lm <- as.matrix(dist(tsne.lm$Y))
 score_sil <- (cluster::silhouette(as.numeric(ct.fac), dd.lm))
@@ -491,9 +557,10 @@ sil_com<-score_sil[,3] #for ComBat corrected data
 sils <- cbind(sil_unc, sil_c, sil_lm, sil_com)
 
 png(file="sils_alltypes_tsnespace.png", width=900, height=700)
-par(mfrow=c(1,1), mar=c(8,8,5,3), cex.axis=3, cex.main=2, cex.lab=3)
+par(mfrow=c(1, 1), mar=c(4, 6, 2, 2), cex.axis=1.5, cex.main=2, cex.lab=2)
 boxplot(sils, main="", names=c("Raw", "MNN", "limma", "ComBat"),
-	      lwd=4, ylab="Silhouette coefficient")#, col="Yellow", ylab="Alpha dists")
+        ylim=c(-0.4, 0.4),
+	      lwd=2, ylab="Silhouette coefficient")#, col="Yellow", ylab="Alpha dists")
 dev.off()
 
 ##################
