@@ -8,6 +8,7 @@
 fname <- "GSE81682_HTSeq_counts.txt.gz"
 if (!file.exists(fname)) { download.file("https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE81682&format=file&file=GSE81682%5FHTSeq%5Fcounts%2Etxt%2Egz", fname) }
 dataF <- read.table(fname, header=TRUE, row.names=1, check.names=FALSE)
+dataF <- as.matrix(dataF)
 dim(dataF)
 
 fname <- "metaF.txt"
@@ -31,6 +32,16 @@ metatypeF[metatypeF=="LT-HSC"] <- "LTHSC"
 metatypeF[metatypeF=="Prog"] <- "other"
 colnames(dataF)<-metatypeF
 
+# Perform size factor normalization within this data set.
+library(scran)
+high.abF <- scater::calcAverage(dataF) > 1
+clustF <- quickCluster(dataF, method="igraph", subset.row=high.abF)
+sizeF <- computeSumFactors(dataF, cluster=clustF, subset.row=high.abF)
+dataF2 <- t(t(dataF)/sizeF)
+
+# Cleaning up memory.
+gc() 
+
 ##########################################
 ##########################################
 
@@ -44,6 +55,7 @@ dim(dataA)
 # Only selecting cells that are in the metadata.
 metainds <- match(rownames(metaA), colnames(dataA))
 dataA <- dataA[,metainds]
+dataA <- as.matrix(dataA)
 
 # Organizing cell type labels.
 metatypeA <- character(nrow(metaA))
@@ -51,6 +63,15 @@ metatypeA[metaA[,1]<7] <- "ERY"
 metatypeA[metaA[,1]>6 & metaA[,1]<12] <- "CMP"
 metatypeA[metaA[,1]>11] <- "GMP"
 colnames(dataA) <- metatypeA
+
+# Perform size factor normalization within this data set.
+high.abA <- scater::calcAverage(dataA) > 1
+clustA <- quickCluster(dataA, method="igraph", subset.row=high.abA)
+sizeA <- computeSumFactors(dataA, cluster=clustA, subset.row=high.abA)
+dataA2 <- t(t(dataA)/sizeA)
+
+# Cleaning up memory.
+gc() 
 
 ##########################################
 ##########################################
@@ -68,23 +89,22 @@ mart <- useMart("ensembl", dataset = "mmusculus_gene_ensembl", host="www.ensembl
 out <- getBM(attributes = c("ensembl_gene_id", "mgi_symbol"), values = features, mart = mart,filters = "ensembl_gene_id")
 
 # Select features that are HVGs _and_ present in both data sets.
-mF <- match(out$ensembl_gene_id, rownames(dataF))
-mA <- pmatch(out$mgi_symbol, rownames(dataA)) # partial, due to use of concatenated gene symbols.
+mF <- match(out$ensembl_gene_id, rownames(dataF2))
+mA <- pmatch(out$mgi_symbol, rownames(dataA2)) # partial, due to use of concatenated gene symbols.
 keep <- !is.na(mF) & !is.na(mA)
 
-dataA2 <- dataA[mA[keep],]
-dataF2 <- dataF[mF[keep],]
-rownames(dataA2) <- rownames(dataF2)
+dataA3 <- dataA2[mA[keep],]
+dataF3 <- dataF2[mF[keep],]
+rownames(dataA3) <- rownames(dataF3)
 
-# Apply library size normalization and perform log-transformation.
-libF <- colSums(dataF2)
-dataF2 <- t(t(dataF2)/libF)
-logDataF3 <- as.matrix(log(1 + dataF2))
+# Rescaling the first dataset to match the coverage of the second.
+aveA <- rowMeans(dataA3)
+aveF <- rowMeans(dataF3)
+dataF3 <- dataF3 * median(aveA/aveF)
 
-libA <- colSums(dataA2)
-dataA2 <- t(t(dataA2)/libA)
-logDataA3 <- as.matrix(log(1 + dataA2))
-
+# Perform log-transformation and save results to file.
+logDataF3 <- log(1 + dataF3)
+logDataA3 <- log(1 + dataA3)
 save(logDataA3, logDataF3, file="logdataFandA_all.RData")
 
 ###########
