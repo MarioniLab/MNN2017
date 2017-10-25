@@ -64,65 +64,65 @@ marker_uber <- merge(marker_merge, marker.cluster, by='Sample')
 
 # uncomment the following plots to see the overlay of each marker gene
 # on the tSNE.  This illustrates the cell type label inference.
-# # mediods 8 = alpha cells
-# ggplot(marker_merge, aes(x=Dim1, y=Dim2, colour=GCG,
-#                          shape=Kmediods)) + 
-#   geom_point(size=1) + theme_classic() +
-#   scale_colour_continuous(low='white', high='red') + 
-#   scale_shape_manual(values=c(18, 19, 24, 15, 11, 103, 7, 23, 0))
-# 
-# # mediod 6 = beta cells, INS highest
-# ggplot(marker_merge, aes(x=Dim1, y=Dim2, colour=INS,
-#                          shape=Kmediods)) + 
-#   geom_point(size=1) + theme_classic() +
-#   scale_colour_continuous(low='white', high='red') + 
-#   scale_shape_manual(values=c(18, 19, 24, 15, 11, 103, 7, 23, 0))
-# 
-# # mediod 7 = delta cells, SST highest
-# ggplot(marker_merge, aes(x=Dim1, y=Dim2, colour=SST,
-#                          shape=Kmediods)) + 
-#   geom_point(size=1) + theme_classic() +
-#   scale_colour_continuous(low='white', high='red') +
-#   scale_shape_manual(values=c(18, 19, 24, 15, 11, 103, 7, 23, 0))
-# 
-# # mediod 7 & 8 = PP cells, PPY highest
-# ggplot(marker_merge, aes(x=Dim1, y=Dim2, colour=PPY,
-#                          shape=Kmediods)) + 
-#   geom_point(size=1) + theme_classic() +
-#   scale_colour_continuous(low='white', high='red') +
-#   scale_shape_manual(values=c(18, 19, 24, 15, 11, 103, 7, 23, 0))
-# 
-# # mediod 1 & 2 = acinar cells, PRSS1 highest
-# ggplot(marker_merge, aes(x=Dim1, y=Dim2, colour=PRSS1,
-#                          shape=Kmediods)) + 
-#   geom_point(size=1) + theme_classic() +
-#   scale_colour_continuous(low='white', high='red') +
-#   scale_shape_manual(values=c(18, 19, 24, 15, 11, 103, 7, 23, 0))
-# 
-# # mediod 4 = ductal cells, KRT19 highest
-# ggplot(marker_merge, aes(x=Dim1, y=Dim2, colour=KRT19,
-#                          shape=Kmediods)) + 
-#   geom_point(size=1) + theme_classic() +
-#   scale_colour_continuous(low='white', high='red') +
-#   scale_shape_manual(values=c(18, 19, 24, 15, 11, 103, 7, 23, 0))
-# 
-# # small pop of mediod 9 = mesenchyme cells, COL1A1 highest, same as PP cells
-# ggplot(marker_merge, aes(x=Dim1, y=Dim2, colour=COL1A1,
-#                          shape=Kmediods)) + 
-#   geom_point(size=1) + theme_classic() +
-#   scale_colour_continuous(low='white', high='red') +
-#   scale_shape_manual(values=c(18, 19, 24, 15, 11, 103, 7, 23, 0))
+# mediods 7 = alpha cells
+ggplot(marker_merge, aes(x=Dim1, y=Dim2, colour=GCG,
+                         shape=Kmediods)) +
+  geom_point(size=2) + theme_classic() +
+  scale_colour_continuous(low='white', high='red') +
+  scale_shape_manual(values=c(18, 19, 24, 15, 11, 103, 7, 23, 0))
+
+# mediod 6 = beta cells, INS highest
+ggplot(marker_merge, aes(x=Dim1, y=Dim2, colour=INS,
+                         shape=Kmediods)) +
+  geom_point(size=2) + theme_classic() +
+  scale_colour_continuous(low='white', high='red') +
+  scale_shape_manual(values=c(18, 19, 24, 15, 11, 103, 7, 23, 0))
+
+# mediod 8 = delta cells, SST highest
+ggplot(marker_merge, aes(x=Dim1, y=Dim2, colour=SST,
+                         shape=Kmediods)) +
+  geom_point(size=2) + theme_classic() +
+  scale_colour_continuous(low='white', high='red') +
+  scale_shape_manual(values=c(18, 19, 24, 15, 11, 103, 7, 23, 0))
+
+# mediod 7 = PP cells, PPY highest
+ggplot(marker_merge, aes(x=Dim1, y=Dim2, colour=PPY,
+                         shape=Kmediods)) +
+  geom_point(size=2) + theme_classic() +
+  scale_colour_continuous(low='white', high='red') +
+  scale_shape_manual(values=c(18, 19, 24, 15, 11, 103, 7, 23, 0))
+
+# mediod 1 & 2 = acinar cells, PRSS1 highest
+ggplot(marker_merge, aes(x=Dim1, y=Dim2, colour=PRSS1,
+                         shape=Kmediods)) +
+  geom_point(size=2) + theme_classic() +
+  scale_colour_continuous(low='white', high='red') +
+  scale_shape_manual(values=c(18, 19, 24, 15, 11, 103, 7, 23, 0))
+
+# mediod 3, 4 & 5 = ductal cells, KRT19 highest
+ggplot(marker_merge, aes(x=Dim1, y=Dim2, colour=KRT19,
+                         shape=Kmediods)) +
+  geom_point(size=2) + theme_classic() +
+  scale_colour_continuous(low='white', high='red') +
+  scale_shape_manual(values=c(18, 19, 24, 15, 11, 103, 7, 23, 0))
+
+# small pop of mediod 9 = mesenchyme cells, COL1A1 highest, same as PP cells
+ggplot(marker_merge, aes(x=Dim1, y=Dim2, colour=COL1A1,
+                         shape=Kmediods)) +
+  geom_point(size=2) + theme_classic() +
+  scale_colour_continuous(low='white', high='red') +
+  scale_shape_manual(values=c(18, 19, 24, 15, 11, 103, 7, 23, 0))
 
 table(marker_uber$Kmediods, marker_uber$markClust)
 marker_uber$CellType <- ""
-marker_uber$CellType[marker_uber$Kmediods %in% c(7, 8) & marker_uber$PPY >= 5] <- "PP"
+marker_uber$CellType[marker_uber$Kmediods %in% c(7)] <- "Alpha"
+marker_uber$CellType[marker_uber$Kmediods %in% c(7) & marker_uber$PPY >= 4] <- "PP"
 marker_uber$CellType[marker_uber$Kmediods == 6] <- "Beta"
-marker_uber$CellType[marker_uber$Kmediods %in% c(8)] <- "Alpha"
-marker_uber$CellType[marker_uber$Kmediods == 7] <- "Delta"
+marker_uber$CellType[marker_uber$Kmediods == 8] <- "Delta"
 marker_uber$CellType[marker_uber$Kmediods %in% c(1, 2)] <- "Acinar"
-marker_uber$CellType[marker_uber$Kmediods %in% c(3, 4) & marker_uber$KRT19 >= 1.5] <- "Ductal"
+marker_uber$CellType[marker_uber$Kmediods %in% c(3, 4, 5)] <- "Ductal"
 marker_uber$CellType[marker_uber$Kmediods %in% c(9) & marker_uber$COL1A1 >= 2] <- "Mesenchyme"
-table(marker_uber$CellType)
+table(marker_uber$CellType, marker_uber$Kmediods)
 
 write.table(marker_uber,
             file="Pancreas/Data/GSE81076_marker_metadata.tsv",
@@ -188,63 +188,63 @@ marker_uber <- merge(marker_merge, marker.cluster, by='Sample')
 
 # uncomment the following plots to see the overlay of each marker gene
 # on the tSNE.  This illustrates the cell type label inference.
-# # mediods 1 & 6 = alpha cells
-# ggplot(marker_merge, aes(x=Dim1, y=Dim2, colour=GCG,
-#                          shape=Kmediods)) +
-#   geom_point(size=1) + theme_classic() +
-#   scale_colour_continuous(low='white', high='red') +
-#   scale_shape_manual(values=c(18, 19, 24, 15, 11, 103, 7, 23, 0))
-# 
-# # mediod 9 = beta cells, INS highest
-# ggplot(marker_merge, aes(x=Dim1, y=Dim2, colour=INS,
-#                          shape=Kmediods)) +
-#   geom_point(size=1) + theme_classic() +
-#   scale_colour_continuous(low='white', high='red') +
-#   scale_shape_manual(values=c(18, 19, 24, 15, 11, 103, 7, 23, 0))
-# 
-# # mediod 3 = delta cells, SST highest
-# ggplot(marker_merge, aes(x=Dim1, y=Dim2, colour=SST,
-#                          shape=Kmediods)) +
-#   geom_point(size=1) + theme_classic() +
-#   scale_colour_continuous(low='white', high='red') +
-#   scale_shape_manual(values=c(18, 19, 24, 15, 11, 103, 7, 23, 0))
-# 
-# # mediod 4 = PP cells, PPY highest
-# ggplot(marker_merge, aes(x=Dim1, y=Dim2, colour=PPY,
-#                          shape=Kmediods)) +
-#   geom_point(size=1) + theme_classic() +
-#   scale_colour_continuous(low='white', high='red') +
-#   scale_shape_manual(values=c(18, 19, 24, 15, 11, 103, 7, 23, 0))
-# 
-# # mediod 5 = acinar cells, PRSS1 highest
-# ggplot(marker_merge, aes(x=Dim1, y=Dim2, colour=PRSS1,
-#                          shape=Kmediods)) +
-#   geom_point(size=1) + theme_classic() +
-#   scale_colour_continuous(low='white', high='red') +
-#   scale_shape_manual(values=c(18, 19, 24, 15, 11, 103, 7, 23, 0))
-# 
-# # mediod 4 = ductal cells, KRT19 highest
-# ggplot(marker_merge, aes(x=Dim1, y=Dim2, colour=KRT19,
-#                          shape=Kmediods)) +
-#   geom_point(size=1) + theme_classic() +
-#   scale_colour_continuous(low='white', high='red') +
-#   scale_shape_manual(values=c(18, 19, 24, 15, 11, 103, 7, 23, 0))
-# 
-# # small pop of mediod 9 = mesenchyme cells, COL1A1 highest, same as PP cells
-# ggplot(marker_merge, aes(x=Dim1, y=Dim2, colour=COL1A1,
-#                          shape=Kmediods)) +
-#   geom_point(size=1) + theme_classic() +
-#   scale_colour_continuous(low='white', high='red') +
-#   scale_shape_manual(values=c(18, 19, 24, 15, 11, 103, 7, 23, 0))
+# mediods 1 & 7 = alpha cells
+ggplot(marker_merge, aes(x=Dim1, y=Dim2, colour=GCG,
+                         shape=Kmediods)) +
+  geom_point(size=2) + theme_classic() +
+  scale_colour_continuous(low='white', high='red') +
+  scale_shape_manual(values=c(18, 19, 24, 15, 11, 103, 7, 23, 0))
+
+# mediod 4 = beta cells, INS highest
+ggplot(marker_merge, aes(x=Dim1, y=Dim2, colour=INS,
+                         shape=Kmediods)) +
+  geom_point(size=2) + theme_classic() +
+  scale_colour_continuous(low='white', high='red') +
+  scale_shape_manual(values=c(18, 19, 24, 15, 11, 103, 7, 23, 0))
+
+# mediod 3 = delta cells, SST highest
+ggplot(marker_merge, aes(x=Dim1, y=Dim2, colour=SST,
+                         shape=Kmediods)) +
+  geom_point(size=2) + theme_classic() +
+  scale_colour_continuous(low='white', high='red') +
+  scale_shape_manual(values=c(18, 19, 24, 15, 11, 103, 7, 23, 0))
+
+# mediod 8 = PP cells, PPY highest
+ggplot(marker_merge, aes(x=Dim1, y=Dim2, colour=PPY,
+                         shape=Kmediods)) +
+  geom_point(size=2) + theme_classic() +
+  scale_colour_continuous(low='white', high='red') +
+  scale_shape_manual(values=c(18, 19, 24, 15, 11, 103, 7, 23, 0))
+
+# mediod 5 & 9 = acinar cells, PRSS1 highest
+ggplot(marker_merge, aes(x=Dim1, y=Dim2, colour=PRSS1,
+                         shape=Kmediods)) +
+  geom_point(size=2) + theme_classic() +
+  scale_colour_continuous(low='white', high='red') +
+  scale_shape_manual(values=c(18, 19, 24, 15, 11, 103, 7, 23, 0))
+
+# mediod 6 = ductal cells, KRT19 highest
+ggplot(marker_merge, aes(x=Dim1, y=Dim2, colour=KRT19,
+                         shape=Kmediods)) +
+  geom_point(size=2) + theme_classic() +
+  scale_colour_continuous(low='white', high='red') +
+  scale_shape_manual(values=c(18, 19, 24, 15, 11, 103, 7, 23, 0))
+
+# small pop of mediod 2 = mesenchyme cells, COL1A1 highest, same as PP cells
+ggplot(marker_merge, aes(x=Dim1, y=Dim2, colour=COL1A1,
+                         shape=Kmediods)) +
+  geom_point(size=2) + theme_classic() +
+  scale_colour_continuous(low='white', high='red') +
+  scale_shape_manual(values=c(18, 19, 24, 15, 11, 103, 7, 23, 0))
 
 
 table(marker_uber$Kmediods, marker_uber$markClust)
 marker_uber$CellType <- ""
-marker_uber$CellType[marker_uber$Kmediods %in% c(4)] <- "PP"
-marker_uber$CellType[marker_uber$Kmediods %in%  c(9)] <- "Beta"
+marker_uber$CellType[marker_uber$Kmediods %in% c(8)] <- "PP"
+marker_uber$CellType[marker_uber$Kmediods %in%  c(4)] <- "Beta"
 marker_uber$CellType[marker_uber$Kmediods %in% c(1, 7)] <- "Alpha"
 marker_uber$CellType[marker_uber$Kmediods %in% c(3)] <- "Delta"
-marker_uber$CellType[marker_uber$Kmediods %in% c(5, 8)] <- "Acinar"
+marker_uber$CellType[marker_uber$Kmediods %in% c(5, 9)] <- "Acinar"
 marker_uber$CellType[marker_uber$Kmediods %in% c(6) ] <- "Ductal"
 marker_uber$CellType[marker_uber$Kmediods %in% c(2)] <- "Mesenchyme"
 table(marker_uber$CellType)

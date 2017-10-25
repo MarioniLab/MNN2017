@@ -6,6 +6,7 @@ library(scran)
 library(biomaRt)
 library(limSolve)
 library(scater)
+library(SingleCellExperiment)
 
 ##############
 ## GSE81076 ##
@@ -63,7 +64,8 @@ gse81076.nz <- apply(gse81076.nz, 2, as.integer)
 # all values show be non-negative integers
 spikes <- grepl(rownames(gse81076.df[keep_genes, ]),
                 pattern='ERCC')
-sce <- newSCESet(countData = gse81076.nz)
+
+sce <- SingleCellExperiment(list(counts = as.matrix(gse81076.nz)))
 sce <- calculateQCMetrics(sce, feature_controls=list(Spikes=spikes))
 isSpike(sce) <- spikes
 
@@ -151,7 +153,7 @@ gse85241.nz <- apply(gse85241.nz, 2, as.integer)
 
 spikes <- grepl(rownames(gse85241.df[keep_genes, ]),
                 pattern='ERCC')
-sce <- newSCESet(countData = gse85241.nz)
+sce <- SingleCellExperiment(list(counts = as.matrix(gse85241.nz)))
 sce <- calculateQCMetrics(sce, feature_controls=list(Spikes=spikes))
 isSpike(sce) <- spikes
 
@@ -246,12 +248,12 @@ dim(gse86473.df[keep_genes, ])
 gse86473.nz <- gse86473.df[keep_genes, ]
 
 cell_sparsity <- apply(gse86473.nz == 0, MARGIN = 2, sum)/dim(gse86473.nz)[1]
-keep_cells <- cell_sparsity < 0.9
+keep_cells <- cell_sparsity < 0.8
 dim(gse86473.nz[, keep_cells])
 gse86473.nz <- gse86473.nz[, keep_cells]
 gse86473.nz <- apply(gse86473.nz, 2, as.integer)
 
-sce <- newSCESet(countData = gse86473.nz)
+sce <- SingleCellExperiment(list(counts = as.matrix(gse86473.nz)))
 sce <- calculateQCMetrics(sce)
 clusters <- quickCluster(sce, min.size=120)
 sce <- computeSumFactors(sce, sizes=c(10, 20, 40, 60), positive=T,
@@ -344,8 +346,8 @@ dim(emtab5061.nz[, keep_cells])
 emtab5061.nz <- emtab5061.nz[, keep_cells]
 emtab5061.nz <- apply(emtab5061.nz, 2, as.integer)
 
-spikes <- grepl(x=rownames(emtab5061.nz), pattern="ERCC")
-sce <- newSCESet(countData = emtab5061.nz)
+spikes <- grepl(x=rownames(emtab5061.df[keep_genes, ]), pattern="ERCC")
+sce <- SingleCellExperiment(list(counts = as.matrix(emtab5061.nz)))
 sce <- calculateQCMetrics(sce, feature_controls=list(Spikes=spikes))
 isSpike(sce) <- spikes
 
