@@ -50,7 +50,7 @@ wolf.stage <- datainfo$Stage
 wolf.lineage <- datainfo$Lineage
 
 # Excluding cells in VE.
-keep <- wolf.stage %in% c("E5.5", "E6.5", "E6.75") & !grepl("^VE", wolf.lineage)
+keep.wolf <- wolf.stage %in% c("E5.5", "E6.5", "E6.75") & !grepl("^VE", wolf.lineage)
 data.wolf.2 <- data.wolf.2[,keep.wolf]
 wolf.lineage <- wolf.lineage[keep.wolf]
 wolf.stage <- wolf.stage[keep.wolf]
@@ -67,12 +67,15 @@ raw.all <- cbind(data.wolf.2,data.meso.2)
 first.batch <- rep(c(TRUE, FALSE), c(ncol(data.wolf.2), ncol(data.meso.2)))
 
 typing <- c(new.labs.wolf, new.labs.meso)
-cols <- rep("grey80", length(typing))
-cols[typing=="Epiblast-PS (E6.5)"] <- "orange"
-cols[typing=="Epiblast (E4.5)"] <- "lightblue"
-cols[typing=="Epiblast (E5.5)"] <- "dodgerblue"
-cols[typing=="Epiblast (E6.5)"] <- "blue"
-cols[typing=="Epiblast (E6.75)"] <- "darkblue"
+color.legend <- c("Epiblast-PS (E6.5)"="salmon",
+                  "Epiblast (E4.5)"= "lightblue",
+                  "Epiblast (E5.5)"="dodgerblue",
+                  "Epiblast (E6.5)"="blue",
+                  "Epiblast (E6.75)"="darkblue")
+cols <- color.legend[typing]
+other <- is.na(cols)
+cols[other & first.batch]  <- "grey80"
+cols[other & !first.batch]  <- "grey50"
 
 plotFUN <- function(fname, Y, col=NULL, xlab="PC1",ylab="PC2", ...) { 
     if (is.null(col)) { 
@@ -80,9 +83,9 @@ plotFUN <- function(fname, Y, col=NULL, xlab="PC1",ylab="PC2", ...) {
     }
     pdf(file=fname,width=9,height=7)
     par(mfrow=c(1,1),mar=c(6,6,4,2),cex.axis=1.2,cex.main=1.4,cex.lab=1.4)
-    shuffler <- sample(nrow(Y)) 
-    plot(Y[shuffler,1], Y[shuffler,2], pch=21, cex=2, col="black", bg=col[shuffler], 
-         type=ifelse(!is.null(subset), "n", "p"), ..., xlab=xlab, ylab=ylab)
+    shuffler <- rev(seq_len(nrow(Y)))  # Antonio's data set first.
+    plot(Y[shuffler,1], Y[shuffler,2], pch=21, cex=1, col="black", bg=col[shuffler], 
+         ..., xlab=xlab, ylab=ylab)
 
     dev.off()
 }
@@ -112,15 +115,11 @@ pc.com <-prcomp(t(X.com), rank=2)
 plotFUN("results/combatGast.pdf", pc.com$x)
 
 ## Legend.
-#pdf(file="leg_detailed.pdf",width=900,height=700)
-#par(mfrow=c(1,1),mar=c(6,6,4,2),cex.axis=2,cex.main=3,cex.lab=2.5)
-##plot(tsne.c$Y[1,1],tsne.c$Y[1,2], pch=3,cex=4,col=alpha(allcolors[1],0.6),main="legend",xlim=c(-20,30),ylim=c(-13,13),xlab="tSNE 1",ylab="tSNE 2")
-#plot(0,0,type="n")
-#forleg<-table(celltypes,allcolors)
-#legend("bottomright", "(x,y)", legend = leg.txt, col =unique(allcolors) , pch = 17,cex = 2.5,bty = "n",lwd = 3,lty=0)   #, trace = TRUE)
-#legend("bottomleft", "(x,y)", legend = leg.txt ,pt.bg=forcoloringleg, pch = 21,cex = 2.5,bty = "n",lwd = 3,lty=0)   #, trace = TRUE)
-##legend(x=7,y=15, legend = c("CEL-Seq 1","CEL-Seq 2","SMART-Seq 1","SMART-Seq 2"), col ="black" , pch = c(4,1,18,3),cex = 2.5,bty = "n")   #, trace = TRUE)
-#dev.off()
+pdf(file="results/leg_detailed.pdf", width=12)
+plot(0,0,type="n",xlab="",ylab="",axes=FALSE)
+legend("topleft", legend = c(names(color.legend)[-1], "Other"), pt.bg=c(color.legend[-1], "grey80"), pch = 21, cex = 2.5, bty = "n", lwd = 3, lty=0)
+legend("topright", legend = c(names(color.legend)[1], "Other"), pt.bg=c(color.legend[1], "grey50"), pch = 21, cex = 2.5, bty = "n", lwd = 3, lty=0)
+dev.off()
 
 #########################################################
 

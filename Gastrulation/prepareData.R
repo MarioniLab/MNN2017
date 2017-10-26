@@ -40,7 +40,7 @@ dev.off()
 # Create a directory for Wolf's data.
 
 dir.create("wolf", showWarnings=FALSE)
-count.file <- "GSE100597_count_table_QC_filtered.txt.gz"
+count.file <- "wolf/GSE100597_count_table_QC_filtered.txt.gz"
 if (!file.exists(count.file)) { 
     download.file("https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE100597&format=file&file=GSE100597%5Fcount%5Ftable%5FQC%5Ffiltered%2Etxt%2Egz", count.file)
 }
