@@ -91,4 +91,4 @@ any.hvg <- intersect(in.both, any.hvg)
 
 data.meso <- data.meso[in.both,]
 data.wolf <- data.wolf[in.both,]
-save(file="mesoandwolf.Rdata", data.meso, data.wolf, any.hvg)
+save(file="mesoandwolf.RData", data.meso, data.wolf, any.hvg)
