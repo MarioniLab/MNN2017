@@ -130,12 +130,10 @@ gc()
 ######################## 
 # Making the legend (using PDF for better resolution).
 
-pdf(file="results/legFA.pdf", width=7, height=7)
+pdf(file="results/legend.pdf", width=7, height=7)
 plot(0,0,type="n", bty="n", axes=FALSE, xlab="", ylab="")
-legend(x=-1, y=1, legend=names(color.legend), pch=21, cex=2.5, col="black", pt.bg=color.legend, bty="n")
-legend(x=0, y=1, legend=names(color.legend)[1:3], 
-       col = color.legend[1:3], 
-       pch = 21, cex = 2.5, bty = "n", lwd = 3, lty=0) 
+legend(x=-1, y=1, legend=names(color.legendF), pch=21, cex=2.5, col="black", pt.bg=color.legendF, bty="n")
+legend(x=0, y=1, legend=names(color.legendA)[1:3], pch=21, cex=2.5, col="black", pt.bg=color.legendA[1:3], bty="n")
 dev.off()
 
 ######################## 
