@@ -210,13 +210,26 @@ all.meta$CellType[grepl(all.meta$CellType, pattern="PSC")] <- "other"
 raw.hvg <- raw.all[rownames(raw.all) %in% common.hvgs, ]
 
 ## set cell type colorings
-allcolors <- c("#CD0303", "#F59500", 
-               "#C400FE", "#17C4CC",
-               "#352FBF", "#716D6E",
-               "#D4D407")
-# allcolors <- labels2colors(all.meta$CellType)
-# allcolors[allcolors == "red"] <- "deeppink"
-# allcolors[allcolors == "yellow"] <- "orange1" # "darkgoldenrod1"
+allcolors <- c("#cc0000", "#f59500", 
+               "#c400ff", "#00c4cc",
+               "#3200ff", "#000000",
+               "#d4d400")
+names(allcolors) <- unique(all.meta$CellType)
+
+# construct a variable that captures interaction between cell types and batch
+# colour by cell type, shade by batch
+# note not all cell types are present in GSE86473
+all.meta$Interact <- as.factor(paste(all.meta$CellType, all.meta$Study, sep="."))
+acinar <- c("#ffff00", "#d4d432", "#d4d496")
+alpha <- c("#ff0000", "#9b3232", "#cc6464", "#cc9696")
+beta <- c("#c400ff", "#c496ff", "#7e00b9", "#60329b")
+delta <- c("#ff7800", "#ffaa64", "#c84b23", "#c87d64")
+ductal <- c("#00f5ff", "#00c8c8", "#006464")
+gamma <- c("#0000ff", "#6464e1", "#afafe1", "#000087")
+other <- c("#000000", "#323232", "#646464")
+
+interact.cols <- c(acinar, alpha, beta, delta, ductal, gamma, other)
+names(interact.cols) <- levels(all.meta$Interact)
 
 ##########################################################################
 ##########################################################################
@@ -231,28 +244,22 @@ unc.tsne <- data.frame(tsne.unc$Y)
 colnames(unc.tsne) <- c("Dim1", "Dim2")
 unc.tsne$Sample <- colnames(raw.hvg)
 unc.merge <- merge(unc.tsne, all.meta, by='Sample')
-cell.colors <- unique(allcolors)
-names(cell.colors) <- unique(unc.merge$CellType)
-
-# plot of points by study
-unc.bybatch <- ggplot(unc.merge, aes(x=Dim1, y=Dim2, colour=Study)) +
-  geom_point(size=2) + theme_classic() +
-  scale_y_continuous(limits=c(-40, 40)) +
-  scale_x_continuous(limits=c(-40, 40)) +
-  guides(colour=FALSE)
 
 # plot of points by cell type and shape by study
 unc.bycell <- ggplot(unc.merge, aes(x=Dim1, y=Dim2, 
-                                    colour=CellType,
-                                    shape=Study,
-                                    group=CellType)) +
-  geom_point(size=2) + theme_classic() +
-  scale_colour_manual(values=cell.colors) +
+                                    fill=Interact,
+                                    group=Interact)) +
+  geom_point(size=1.5, shape=21, alpha=1) + theme_classic() +
+  scale_fill_manual(values=interact.cols) +
   scale_y_continuous(limits=c(-40, 40)) +
   scale_x_continuous(limits=c(-40, 40)) +
-  guides(colour=FALSE, shape=FALSE) +
-  labs(x="tSNE 1", y="tSNE 2", main="Uncorrected")
-  
+  #guides(colour=TRUE) +
+  labs(x="tSNE 1", y="tSNE 2", title="Uncorrected")
+
+ggsave(unc.bycell,
+       filename="Pancreas/Uncorrected_pancreas-tSNE.png",
+       height=5.75, width=9.3035, dpi=300)
+
 ## MNN batch correction
 hvg.common <- common.hvgs[common.hvgs %in% common.genes]
 Xmnn <- mnnCorrect(as.matrix(r.datah1[, 1:(dim(r.datah1)[2]-1)]),
@@ -276,24 +283,21 @@ mnn.tsne <- data.frame(tsne.c$Y)
 colnames(mnn.tsne) <- c("Dim1", "Dim2")
 mnn.tsne$Sample <- colnames(raw.hvg)
 mnn.merge <- merge(mnn.tsne, all.meta, by='Sample')
-cell.colors <- unique(allcolors)
-names(cell.colors) <- unique(mnn.merge$CellType)
 
-# plot by batch ID
-correct.bybatch <- ggplot(mnn.merge, aes(x=Dim1, y=Dim2, colour=Study, shape=CellType)) +
-  geom_point(size=2) + theme_classic() +
+# plot of points by cell type and shape by study
+mnn.bycell <- ggplot(mnn.merge, aes(x=Dim1, y=Dim2, 
+                                    fill=Interact,
+                                    group=Interact)) +
+  geom_point(size=1.5, shape=21, alpha=1) + theme_classic() +
+  scale_fill_manual(values=interact.cols) +
   scale_y_continuous(limits=c(-40, 40)) +
   scale_x_continuous(limits=c(-40, 40)) +
-  guides(colour=FALSE, shape=FALSE)
+  #guides(colour=TRUE) +
+  labs(x="tSNE 1", y="tSNE 2", title="MNN corrected")
 
-# plot by cell type, and shape by batch
-correct.bycell <- ggplot(mnn.merge, aes(x=Dim1, y=Dim2, colour=CellType, shape=Study)) +
-  geom_point(size=2) + theme_classic() +
-  scale_colour_manual(values=cell.colors) +
-  scale_y_continuous(limits=c(-40, 40)) +
-  scale_x_continuous(limits=c(-40, 40)) +
-  #guides(colour=FALSE, shape=FALSE) +
-  labs(x="tSNE 1", y="tSNE 2", main="MNN corrected")
+ggsave(mnn.bycell,
+       filename="Pancreas/MNNcorrect_pancreas-tSNE.png",
+       height=5.75, width=9.3035, dpi=300)
 
 ##########################################################################
 ##########################################################################
@@ -316,24 +320,21 @@ lm.tsne <- data.frame(tsne.lm$Y)
 colnames(lm.tsne) <- c("Dim1", "Dim2")
 lm.tsne$Sample <- colnames(raw.hvg)
 lm.merge <- merge(lm.tsne, all.meta, by='Sample')
-cell.colors <- unique(allcolors)
-names(cell.colors) <- unique(lm.merge$CellType)
-
-# plot by batch ID
-lm.bybatch <- ggplot(lm.merge, aes(x=Dim1, y=Dim2, colour=Study, shape=CellType)) +
-  geom_point(size=2) + theme_classic() +
-  scale_y_continuous(limits=c(-40, 40)) +
-  scale_x_continuous(limits=c(-40, 40)) +
-  guides(colour=FALSE, shape=FALSE)
 
 # plot by cell type, and shape by batch ID
-lm.bycell<- ggplot(lm.merge, aes(x=Dim1, y=Dim2, colour=CellType, shape=Study)) +
-  geom_point(size=2) + theme_classic() +
-  scale_colour_manual(values=cell.colors) +
+lm.bycell <- ggplot(lm.merge, aes(x=Dim1, y=Dim2, 
+                                    fill=Interact,
+                                    group=Interact)) +
+  geom_point(size=1.5, shape=21, alpha=1) + theme_classic() +
+  scale_fill_manual(values=interact.cols) +
   scale_y_continuous(limits=c(-40, 40)) +
   scale_x_continuous(limits=c(-40, 40)) +
-  guides(colour=FALSE, shape=FALSE) +
-  labs(x="tSNE 1", y="tSNE 2", main="limma corrected")
+  #guides(colour=TRUE) +
+  labs(x="tSNE 1", y="tSNE 2", title="limma corrected")
+
+ggsave(lm.bycell,
+       filename="Pancreas/limma_pancreas-tSNE.png",
+       height=5.75, width=9.3035, dpi=300)
 
 ##########################################################################
 ##########################################################################
@@ -351,24 +352,21 @@ combat.tsne <- data.frame(tsne.combat$Y)
 colnames(combat.tsne) <- c("Dim1", "Dim2")
 combat.tsne$Sample <- colnames(raw.hvg)
 combat.merge <- merge(combat.tsne, all.meta, by='Sample')
-cell.colors <- unique(allcolors)
-names(cell.colors) <- unique(combat.merge$CellType)
 
-# plot by batch ID
-combat.bybatch <- ggplot(combat.merge, aes(x=Dim1, y=Dim2, colour=Study, shape=CellType)) +
-  geom_point(size=2) + theme_classic() +
+# plot by cell type, and shape by batch ID
+combat.bycell <- ggplot(combat.merge, aes(x=Dim1, y=Dim2, 
+                                  fill=Interact,
+                                  group=Interact)) +
+  geom_point(size=1.5, shape=21, alpha=1) + theme_classic() +
+  scale_fill_manual(values=interact.cols) +
   scale_y_continuous(limits=c(-40, 40)) +
   scale_x_continuous(limits=c(-40, 40)) +
-  guides(colour=FALSE, shape=FALSE)
+  #guides(colour=TRUE) +
+  labs(x="tSNE 1", y="tSNE 2", title="ComBat corrected")
 
-# plot by cell type and shape by batch ID
-combat.bycell <- ggplot(combat.merge, aes(x=Dim1, y=Dim2, colour=CellType, shape=Study)) +
-  geom_point(size=2) + theme_classic() +
-  scale_colour_manual(values=cell.colors) +
-  scale_y_continuous(limits=c(-40, 40)) +
-  scale_x_continuous(limits=c(-40, 40)) +
-  guides(colour=FALSE, shape=FALSE) +
-  labs(x="tSNE 1", y="tSNE 2", main="ComBat corrected")
+ggsave(combat.bycell,
+       filename="Pancreas/ComBat_pancreas-tSNE.png",
+       height=5.75, width=9.3035, dpi=300)
 
 ##########################################################################
 ##########################################################################
@@ -377,10 +375,6 @@ combat.bycell <- ggplot(combat.merge, aes(x=Dim1, y=Dim2, colour=CellType, shape
 corrected.df$gene_id <- common.hvgs
 write.table(corrected.df, file="Pancreas/Data/mnnCorrected.tsv", row.names=FALSE, sep="\t", quote=FALSE)
 
-## ouput a single plot of all 4 tSNEs coloured by cell type
-plot_grid(unc.bycell, correct.bycell,
-          lm.bycell, combat.bycell,
-          ncol=2)
 ##########################################################################
 ##########################################################################
 ## compute Silhouette coefficients on t-SNE coordinates
