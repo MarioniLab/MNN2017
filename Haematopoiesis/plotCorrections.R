@@ -29,7 +29,7 @@ plotFUN <- function(fname, Y, subset=NULL, ..., xlab="tSNE 1",ylab="tSNE 2") {
     # Plot the first, smaller batch ON TOP OF the second, larger batch.
     set.seed(0)
     reorder <- sample(nrow(Y))
-    plot(Y[reorder,1], Y[reorder,2], cex=2, pch=21, col="black", 
+    plot(Y[reorder,1], Y[reorder,2], cex=2, pch=21, col="black", lwd=0.1,
          bg=allcolors[reorder], ..., xlab=xlab, ylab=ylab) 
     dev.off()
 }
