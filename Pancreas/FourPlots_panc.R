@@ -190,8 +190,15 @@ raw.all <- Reduce(x=list("b1"=r.datah1, "b2"=r.datah2,
 rownames(raw.all) <- raw.all$gene_id
 raw.all <- raw.all[, 2:dim(raw.all)[2]]
 
+# to get a set of informative highly variable genes we will meta-analyse the
+# p-values from the indivdual chi-squared tests on from each batch
+# using the mean p-value, because it has a breakpoint of 0, we will
+# then take the set of HVGs across batches with a combined pval <= 0.01
+
+
 # take intersection of all hvgs
-common.hvgs <- intersect(HVG1, intersect(HVG2, intersect(HVG3, HVG4)))
+#common.hvgs <- intersect(HVG1, intersect(HVG2, intersect(HVG3, HVG4)))
+common.hvgs <- unique(c(HVG1, HVG2, HVG3, HVG4))
 
 # assign small weird cell types from GSE85241 and E=MTAB-5061 to 'other'
 all.meta$CellType[all.meta$CellType == "PP"] <- "Gamma"
@@ -249,7 +256,7 @@ unc.merge <- merge(unc.tsne, all.meta, by='Sample')
 unc.bycell <- ggplot(unc.merge, aes(x=Dim1, y=Dim2, 
                                     fill=Interact,
                                     group=Interact)) +
-  geom_point(size=1.5, shape=21, alpha=1) + theme_classic() +
+  geom_point(size=1, shape=21) + theme_classic() +
   scale_fill_manual(values=interact.cols) +
   scale_y_continuous(limits=c(-40, 40)) +
   scale_x_continuous(limits=c(-40, 40)) +
@@ -274,6 +281,9 @@ Xmnn <- mnnCorrect(as.matrix(r.datah1[, 1:(dim(r.datah1)[2]-1)]),
 # combine corrected matrices together
 corrected.df <- do.call(cbind.data.frame, Xmnn$corrected)
 corrected.mat <- as.matrix(t(corrected.df))
+# attach original column names, output order is the same as input order
+colnames(corrected.df) <- c(colnames(r.datah1[, 1:(dim(r.datah1)[2]-1)]), colnames(r.datah2[, 1:(dim(r.datah2)[2]-1)]),
+                            colnames(r.datah3[, 1:(dim(r.datah3)[2]-1)]), colnames(r.datah4[, 1:(dim(r.datah4)[2]-1)]))
 
 set.seed(0)
 tsne.c <- Rtsne(corrected.mat, is_distance=FALSE, perplexity=100)
@@ -373,7 +383,8 @@ ggsave(combat.bycell,
 # write out a single file for all of the corrected data and a 
 # file for the combined meta data
 corrected.df$gene_id <- common.hvgs
-write.table(corrected.df, file="Pancreas/Data/mnnCorrected.tsv", row.names=FALSE, sep="\t", quote=FALSE)
+write.table(corrected.df, file="Pancreas/Data/mnnCorrected.tsv",
+            row.names=FALSE, sep="\t", quote=FALSE)
 
 ##########################################################################
 ##########################################################################

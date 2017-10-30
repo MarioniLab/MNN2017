@@ -1,7 +1,7 @@
 ---
 title: "PancreasDE"
 author: "Mike Morgan"
-date: "04 July 2017"
+date: "27 October 2017"
 output: html_document
 ---
 
@@ -120,33 +120,23 @@ First we'll load all of the raw and batch corrected data into the R environment.
 ```{r, echo=TRUE, warning=FALSE, message=FALSE}
 # all paths assume code is executed in the MNN2017 repository directory
 # change these as necessary
+# all corrected data are in a single file
+all.correct <- read.table("../Pancreas/Data/mnnCorrected.tsv",
+                          h=TRUE, sep="\t", stringsAsFactors=FALSE)
 
-gse81076.correct <- read.table("../Pancreas/results/C_CELLseq_GSE81076.txt",
-                               h=T, stringsAsFactors=F)
-
-gse81076.raw <- read.table("../ftp2.cruk.cam.ac.uk/CELseq/GSE81076-norm.tsv.gz", sep="\t",
+gse81076.raw <- read.table("../Pancreas/Data/GSE81076_SFnorm.tsv", sep="\t",
                            h=T, stringsAsFactors=F)
 
-gse85241.correct <- read.table("../Pancreas/results/C_CELLseq_SSE85241.txt",
-                               h=T, stringsAsFactors=F)
-
-gse85241.raw <- read.table("../ftp2.cruk.cam.ac.uk/CELseq/GSE85241-norm.tsv.gz", sep="\t",
+gse85241.raw <- read.table("../Pancreas/Data/GSE85241_SFnorm.tsv", sep="\t",
                            h=T, stringsAsFactors=F)
 
-emtab5061.correct <- read.table("../Pancreas/results/C_Smartseq_EMATB5061.txt",
-                               h=T, stringsAsFactors=F)
-
-emtab5061.raw <- read.table("../ftp2.cruk.cam.ac.uk/Smartseq2/E-MTAB-5061-norm.tsv.gz", sep="\t",
+emtab5061.raw <- read.table("../Pancreas/Data/E-MTAB-5061_SFnorm.tsv", sep="\t",
                            h=T, stringsAsFactors=F)
 
-gse86473.correct <- read.table("../Pancreas/results/C_Smartseq_GSE86473.txt",
+gse86473.raw <- read.table("../Pancreas/Data/GSE86473_SFnorm.tsv", sep="\t",
                                h=T, stringsAsFactors=F)
 
-gse86473.raw <- read.table("../ftp2.cruk.cam.ac.uk/Smartseq2/GSE86473-norm.tsv.gz", sep="\t",
-                               h=T, stringsAsFactors=F)
-
-
-all.genes <- unique(c(rownames(gse81076.correct), rownames(gse85241.correct), rownames(emtab5061.correct), rownames(gse86473.correct)))
+all.genes <- unique(all.correct$gene_id)
 
 ensembl <- useEnsembl(biomart='ENSEMBL_MART_ENSEMBL', dataset='hsapiens_gene_ensembl', GRCh=37)
 
@@ -159,29 +149,29 @@ We also need to retrieve the meta data and highly variable genes, which are down
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE}
 # meta data
-gse81076.meta <- read.table("ftp2.cruk.cam.ac.uk/CELseq/GSE81076_marker_metadata.tsv", sep="\t",
+gse81076.meta <- read.table("../Pancreas/Data/GSE81076_marker_metadata.tsv", sep="\t",
+                            stringsAsFactors=F, h=TRUE)
+
+gse85241.meta <- read.table("../Pancreas/Data/GSE85241_marker_metadata.tsv", sep="\t",
                             stringsAsFactors=F, h=T)
 
-gse85241.meta <- read.table("ftp2.cruk.cam.ac.uk/CELseq/GSE85241_marker_metadata.tsv", sep="\t",
+emtab5061.meta <- read.table("../Pancreas/Data/E-MTAB-5061_metadata.tsv", sep="\t",
                             stringsAsFactors=F, h=T)
 
-emtab5061.meta <- read.table("ftp2.cruk.cam.ac.uk/Smartseq2/E-MTAB-5061_marker_metadata.tsv", sep="\t",
+gse86473.meta <- read.table("../Pancreas/Data/GSE86473_metadata.tsv", sep="\t",
                             stringsAsFactors=F, h=T)
+#gse86473.meta$Study <- "GSE86473"
 
-gse86473.meta <- read.table("ftp2.cruk.cam.ac.uk/Smartseq2/GSE86473_marker_metadata.tsv", sep="\t",
-                            stringsAsFactors=F, h=T)
-gse86473.meta$Study <- "GSE86473"
-
-gse86473.hvg <- read.table("ftp2.cruk.cam.ac.uk/Smartseq2/GSE86473-HVG.tsv", h=F, sep="\t",
+gse86473.hvg <- read.table("../Pancreas/Data/GSE86473-HVG.tsv", h=F, sep="\t",
                            stringsAsFactors=F)
 
-gse81076.hvg <- read.table("ftp2.cruk.cam.ac.uk/CELseq/GSE81076-HVG.tsv", h=F, sep="\t",
+gse81076.hvg <- read.table("../Pancreas/Data/GSE81076-HVG.tsv", h=F, sep="\t",
                            stringsAsFactors=F)
 
-emtab5061.hvg <- read.table("ftp2.cruk.cam.ac.uk/Smartseq2//E-MTAB-5061-HVG.tsv", h=F, sep="\t",
+emtab5061.hvg <- read.table("../Pancreas/Data/E-MTAB-5061-HVG.tsv", h=F, sep="\t",
                            stringsAsFactors=F)
 
-gse85241.hvg <- read.table("ftp2.cruk.cam.ac.uk/CELseq//GSE85241-HVG.tsv", h=F, sep="\t",
+gse85241.hvg <- read.table("../Pancreas/Data/GSE85241-HVG.tsv", h=F, sep="\t",
                            stringsAsFactors=F)
 ```
 
@@ -189,25 +179,6 @@ gse85241.hvg <- read.table("ftp2.cruk.cam.ac.uk/CELseq//GSE85241-HVG.tsv", h=F, 
 The comparison of the two smallest cell populations would be in gse81076, between the delta islets and the PP cells.  We want to naively cluster the cells together and find the cells that relate to say, PP and delta cells based on marker genes, etc.  This would essentially reflect the sort of work-flow that would be performed when the cell type labels are not known _a priori_.  Then using the same cells on the uncorrected data, we want to show that we can find more DE genes after correction, clustering, etc.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE}
-gse81076.correct$gene_id <- rownames(gse81076.correct)
-
-gse85241.correct$gene_id <- rownames(gse85241.correct)
-
-gse86473.correct$gene_id <- rownames(gse86473.correct)
-
-emtab5061.correct$gene_id <- rownames(emtab5061.correct)
-
-set.seed(42)
-merge.list <- list("GSE81076"=gse81076.correct,
-                   "GSE85241"=gse85241.correct,
-                   "EMTAB5061"=emtab5061.correct,
-                   "GSE86473"=gse86473.correct)
-
-merged.correct <- Reduce(f=function(x, y) merge(x, y, by='gene_id'),
-                         x=merge.list)
-rownames(merged.correct) <- merged.correct$gene_id
-merged.correct <- merged.correct[, 2:dim(merged.correct)[2]]
-
 merged.meta <- data.frame(do.call(rbind, list("GSE81076"=gse81076.meta[, c("Sample", "Study", "CellType")],
                                               "GSE85241"=gse85241.meta[, c("Sample", "Study", "CellType")],
                                               "EMTAB5061"=emtab5061.meta[, c("Sample", "Study", "CellType")],
@@ -217,17 +188,7 @@ merged.meta$CellType <- gsub(tolower(merged.meta$CellType), pattern=" cell", rep
 table(merged.meta$CellType)
 ```
 
-### Cell clustering
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE}
-# use the original set of HVG
-union.hvg <- unique(c(unlist(gse86473.hvg), unlist(gse81076.hvg), unlist(emtab5061.hvg), unlist(gse85241.hvg)))
-all.hvg <- rownames(merged.correct) %in% union.hvg
-names(all.hvg) <- rownames(merged.correct)
-
-table(all.hvg)
-```
-
+## Cell clustering
 We now want to cluster cells and try to find their cell label(s), before doing a DE analysis on those cells (using the original uncorrected expression values).
 
 ### Clustering using MNN corrected data 
@@ -238,7 +199,7 @@ inc.types <- c("pp", "alpha", "beta", "acinar", "delta", "ductal", "mesenchyme",
 inc.cells <- merged.meta$Sample[merged.meta$CellType %in% inc.types]
 
 # cluster cells on the hvg
-all.cells <- merged.correct[all.hvg, intersect(inc.cells, colnames(merged.correct))]
+all.cells <- all.correct[, intersect(inc.cells, colnames(all.correct))]
 all.cells[is.na(all.cells)] <- 0
 all.cells <- all.cells[, intersect(colnames(all.cells), merged.meta$Sample)]
 merged.meta <- merged.meta[merged.meta$Sample %in% intersect(colnames(all.cells), merged.meta$Sample), ]
@@ -253,12 +214,10 @@ gse85241.cells <- merged.meta$Sample[merged.meta$Study == "GSE85241"]
 
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE}
-# use the euclidean distances to then perform tSNE on
-# NB: this is a slow operation as there are ~4000 cells to compute distances for
+# NB: this is a slow operation as there are ~7000 cells to embed
 set.seed(42)
-all.dist <- dist(t(all.cells), method='euclidean')
-all.tsne <- tsne_wrapper(all.dist, perplexity=50, is.dist=TRUE)
-
+all.tsne <- tsne_wrapper(all.cells, perplexity=50)
+all.tsne$Sample <- colnames(all.cells)
 all.merge <- merge(all.tsne, merged.meta, by='Sample')
 ```
 
@@ -495,7 +454,7 @@ The comparison is now 416 vs. 409 cells, there should be many more DE genes.
 # select the same raw genes that are in the corrected data
 # need to use the raw values, and block on batch
 
-correct.genes <- rownames(merged.correct)
+correct.genes <- rownames(all.correct)
 gse86473.raw$gene_id <- gse86473.raw$hgnc_symbol
 emtab5061.raw$gene_id <- emtab5061.raw$hgnc_symbol
 
