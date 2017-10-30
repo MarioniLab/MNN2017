@@ -1,7 +1,6 @@
 # Code for the t-SNE plots of pancreas data sets and the Silhouette coefficients before and after batch correction by different methods (main text Figure 4).
 # PLEASE SET THE WORKING DIRECTORY TO ./MNN2017/
 
-# setwd("results")
 require(WGCNA)
 require(Rtsne)
 library(scales)
@@ -221,10 +220,6 @@ for(i in seq_along(common.genes)){
   }
 }
 
-# take intersection of all hvgs
-#common.hvgs <- intersect(HVG1, intersect(HVG2, intersect(HVG3, HVG4)))
-#common.hvgs <- unique(c(HVG1, HVG2, HVG3, HVG4))
-
 # assign small weird cell types from GSE85241 and E=MTAB-5061 to 'other'
 all.meta$CellType[all.meta$CellType == "PP"] <- "Gamma"
 all.meta$CellType[grepl(all.meta$CellType, pattern="Mesenchyme")] <- "other"
@@ -292,6 +287,8 @@ ggsave(unc.bycell,
        filename="Pancreas/Uncorrected_pancreas-tSNE.png",
        height=5.75, width=9.3035, dpi=300)
 
+##########################################################################
+##########################################################################
 ## MNN batch correction
 hvg.common <- common.hvgs[common.hvgs %in% common.genes]
 Xmnn <- mnnCorrect(as.matrix(r.datah1[, 1:(dim(r.datah1)[2]-1)]),
@@ -414,6 +411,7 @@ write.table(corrected.df, file="Pancreas/Data/mnnCorrected.tsv",
 ##########################################################################
 ##########################################################################
 ## compute Silhouette coefficients on t-SNE coordinates
+# this should only be used on individual cell types, not all cell types together
 require(cluster)
 ct.fac <- factor(all.meta$CellType)
 # only calculate silhouette on alpha cells.
@@ -445,3 +443,9 @@ boxplot(sils, main="", names=c("Raw", "MNN", "limma", "ComBat"),
 dev.off()
 
 ##################
+
+# serialize objects to an RDS file
+save(raw.all, corrected.df, lm.mat, combat.mat,
+     common.hvgs,
+     all.meta, interact.cols,
+     file="Pancreas/Data/ObjectsForPlotting.RDS")
