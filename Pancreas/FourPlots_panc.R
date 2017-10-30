@@ -25,7 +25,7 @@ datah1 <- datah1[, 1:(dim(datah1)[2]-1)]
 
 hvg1 <- read.table("Pancreas/Data/GSE81076-HVG.tsv",
                    h=TRUE, sep="\t", stringsAsFactors=F)
-HVG1 <- hvg1$gene_id
+HVG1 <- hvg1$gene_id[hvg1$HVG == 1]
 
 meta1 <- read.table("Pancreas/Data/GSE81076_marker_metadata.tsv",
                     h=TRUE, sep="\t", stringsAsFactors=FALSE)
@@ -62,7 +62,7 @@ datah2 <- datah2[, 1:(dim(datah2)[2]-1)]
 
 hvg2 <- read.table("Pancreas/Data/GSE85241-HVG.tsv",
                    h=TRUE, sep="\t", stringsAsFactors=F)
-HVG2 <- hvg2$gene_id
+HVG2 <- hvg2$gene_id[hvg2$HVG == 1]
 
 meta2 <- read.table("Pancreas/Data/GSE85241_marker_metadata.tsv",
                     h=TRUE, sep="\t", stringsAsFactors=FALSE)
@@ -100,7 +100,7 @@ datah3 <- datah3[, 1:(dim(datah3)[2]-1)]
 
 hvg3 <- read.table("Pancreas/Data/GSE86473-HVG.tsv",
                    h=TRUE, sep="\t", stringsAsFactors=F)
-HVG3 <- hvg3$gene_id
+HVG3 <- hvg3$gene_id[hvg3$HVG == 1]
 
 meta3 <- read.table("Pancreas/Data/GSE86473_metadata.tsv",
                     h=TRUE, sep="\t", stringsAsFactors=FALSE)
@@ -138,7 +138,7 @@ datah4 <- datah4[, 1:(dim(datah4)[2]-1)]
 
 hvg4 <- read.table("Pancreas/Data/E-MTAB-5061-HVG.tsv",
                    h=TRUE, sep="\t", stringsAsFactors=F)
-HVG4 <- hvg4$gene_id
+HVG4 <- hvg4$gene_id[hvg4$HVG == 1]
 
 meta4 <- read.table("Pancreas/Data/E-MTAB-5061_metadata.tsv",
                     h=TRUE, sep="\t", stringsAsFactors=FALSE)
@@ -194,11 +194,36 @@ raw.all <- raw.all[, 2:dim(raw.all)[2]]
 # p-values from the indivdual chi-squared tests on from each batch
 # using the mean p-value, because it has a breakpoint of 0, we will
 # then take the set of HVGs across batches with a combined pval <= 0.01
+# if there are many large pvalues, i.e. 1 the geometric mean will better handle
+# this situation so no pvalue > 1
+# we can only meta-analyse the genes which are in common to all data sets
+# define a geomtric mean function, no inbuilt function in R
+# credit to https://stackoverflow.com/questions/2602583/geometric-mean-is-there-a-built-in?answertab=votes#tab-top
+gm_mean = function(x, na.rm=TRUE){
+  exp(sum(log(x[x > 0]), na.rm=na.rm) / length(x))
+}
 
+# geometric mean on v.small fractional numbers might become quite
+# unstable.  Could just use take geometric mean on a log scale
+# this still uses the intersection of all genes, if it doesn't
+# appear in the list of genes at all, set the pval - 1.
+all.genes <- unique(c(genes1, genes2, genes3, genes4))
+common.hvgs <- c()
+for(i in seq_along(common.genes)){
+  g <- common.genes[i]
+  pvals <- c(hvg1$pval[hvg1$gene_id == g],
+             hvg2$pval[hvg2$gene_id == g],
+             hvg3$pval[hvg3$gene_id == g],
+             hvg4$pval[hvg4$gene_id == g])
+  meta.p <- gm_mean(-log10(pvals))
+  if(10**(-meta.p) <= 0.001){
+    common.hvgs <- c(common.hvgs, g)
+  }
+}
 
 # take intersection of all hvgs
 #common.hvgs <- intersect(HVG1, intersect(HVG2, intersect(HVG3, HVG4)))
-common.hvgs <- unique(c(HVG1, HVG2, HVG3, HVG4))
+#common.hvgs <- unique(c(HVG1, HVG2, HVG3, HVG4))
 
 # assign small weird cell types from GSE85241 and E=MTAB-5061 to 'other'
 all.meta$CellType[all.meta$CellType == "PP"] <- "Gamma"

@@ -99,7 +99,7 @@ gse81076.HVG <- find_hvg(dataframe=gse81076.norm[, 1:(dim(gse81076.norm)[2]-1)],
                          return.p=TRUE)
 
 # select the highly variable genes from the input dataframe column 'gene id'
-gse81076.hvg_df <- as.data.frame(gse81076.HVG[gse81076.HVG[, 1] == 1, ])
+gse81076.hvg_df <- as.data.frame(gse81076.HVG)
 gse81076.hvg_df$gene_id <- rownames(gse81076.hvg_df)
 colnames(gse81076.hvg_df) <- c("HVG", "pval", "gene_id")
 
@@ -123,7 +123,7 @@ gse85241.HVG <- find_hvg(dataframe=gse85241.norm[, 1:(dim(gse85241.norm)[2]-1)],
                          return.p=TRUE)
 
 # select the highly variable genes from the input dataframe column 'gene id'
-gse85241.hvg_df <- as.data.frame(gse85241.HVG[gse85241.HVG[, 1] == 1, ])
+gse85241.hvg_df <- as.data.frame(gse85241.HVG)
 gse85241.hvg_df$gene_id <- rownames(gse85241.hvg_df)
 colnames(gse85241.hvg_df) <- c("HVG", "pval", "gene_id")
 
@@ -148,7 +148,7 @@ gse86473.HVG <- find_hvg(dataframe=gse86473.norm[, 1:(dim(gse86473.norm)[2]-1)],
                          return.p=TRUE)
 
 # select the highly variable genes from the input dataframe column 'gene id'
-gse86473.hvg_df <- as.data.frame(gse86473.HVG[gse86473.HVG[, 1] == 1, ])
+gse86473.hvg_df <- as.data.frame(gse86473.HVG)
 gse86473.hvg_df$gene_id <- rownames(gse86473.hvg_df)
 colnames(gse86473.hvg_df) <- c("HVG", "pval", "gene_id")
 
@@ -171,7 +171,7 @@ emtab5061.HVG <- find_hvg(dataframe=emtab5061.norm[, 1:(dim(emtab5061.norm)[2]-1
                          return.p=TRUE)
 
 # select the highly variable genes from the input dataframe column 'gene id'
-emtab5061.hvg_df <- as.data.frame(emtab5061.HVG[emtab5061.HVG[, 1] == 1, ])
+emtab5061.hvg_df <- as.data.frame(emtab5061.HVG)
 emtab5061.hvg_df$gene_id <- rownames(emtab5061.hvg_df)
 colnames(emtab5061.hvg_df) <- c("HVG", "pval", "gene_id")
 
