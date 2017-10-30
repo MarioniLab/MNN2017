@@ -8,8 +8,11 @@ library(cellrangerRkit)
 library(Rtsne)
 library(stringr)
 library(igraph)
-source("~/Dropbox/R_sessions/SingleCellFunctions/single_cell_functions.R")
+source("SomeFuncs/convenience_functions.R")
 
+################################################################################################
+################################################################################################
+# download the 10X data
 pbmc_path <- "Droplet/10X_data/PBMC/"
 
 # this has to be an absolute path, relative paths break
@@ -20,6 +23,9 @@ pbmc.10x <- load_cellranger_matrix(pbmc_path)
 # filter non-zero genes and normalize PBMC 10X UMI counts
 pbmc.nz <- get_nonzero_genes(pbmc.10x)
 
+################################################################################################
+################################################################################################
+# normalize using size factors
 pbmc.norm <- size_factor_normalize(exprs(pbmc.10x), cell.sparse=0.95,
                                    gene.sparse=0.99, cluster.size=50)
 
@@ -31,7 +37,8 @@ ensembl <- useEnsembl(biomart='ENSEMBL_MART_ENSEMBL', dataset='hsapiens_gene_ens
 gene_symbol <- getBM(attributes=c('ensembl_gene_id', 'external_gene_name'),
                      filters='ensembl_gene_id', mart=ensembl,
                      values=all.genes)
-
+################################################################################################
+################################################################################################
 # select highly variable genes (~1-2k will be more than sufficient I think)
 pbmc.hvg <- find_hvg(pbmc.norm[, 1:(dim(pbmc.norm)[2]-1)], plot=FALSE)
 
@@ -39,22 +46,26 @@ pbmc.hvg <- find_hvg(pbmc.norm[, 1:(dim(pbmc.norm)[2]-1)], plot=FALSE)
 # there are 1192 HVG at p<=0.01
 
 write.table(pbmc.norm,
-            file="~/Dropbox/MNNfigures/10X_data/PBMC/PBMC_norm.tsv",
+            file="Droplet/10X_data/PBMC/PBMC_norm.tsv",
             sep="\t", row.names=FALSE, quote=FALSE)
 
 hvg.df <- cbind.data.frame(names(pbmc.hvg)[pbmc.hvg])
 colnames(hvg.df) <- c("HVG")
 write.table(hvg.df,
-            file="~/Dropbox/MNNfigures/10X_data/PBMC/PBMC_hvg.tsv",
+            file="~/Droplet/10X_data/PBMC/PBMC_hvg.tsv",
             sep="\t", row.names=FALSE, quote=FALSE)
 
-# tSNE the shiat out of this
+################################################################################################
+################################################################################################
+# tSNE embedding for visualization
 pbmc.select <- pbmc.norm[pbmc.hvg, ]
 pbmc.select[is.na(pbmc.select)] <- 0
 
 set.seed(42)
 pbmc.map <- tsne_wrapper(pbmc.select[, 1:(dim(pbmc.norm)[2]-1)], perplexity=100)
 
+################################################################################################
+################################################################################################
 # pull out marker genes for PBMC populations to add identities to different clusters
 # also try SNNgraph for clustering!  Use just 20 dimensions from the PCA to build the graph
 pbmc.snn <- buildSNNGraph(as.matrix(pbmc.norm[, 1:(dim(pbmc.norm)[2]-1)]),
@@ -64,7 +75,6 @@ pbmc.snn <- buildSNNGraph(as.matrix(pbmc.norm[, 1:(dim(pbmc.norm)[2]-1)]),
 # try a few different values for the step parameter
 pbmc.community <- cluster_walktrap(pbmc.snn, steps=4)
 n.comms <- length(pbmc.community)
-print(n.comms)
 
 # vertex community membership 
 pbmc.members <- pbmc.community$membership
@@ -79,7 +89,7 @@ comm.tsne <- ggplot(pbmc.max,
   geom_point(size=3) + theme_classic()
 
 ggsave(comm.tsne,
-       filename="~/Dropbox/MNNfigures/10X_data/PBMC/PBMC_communities_tSNE.png",
+       filename="Droplet/10X_data/PBMC/PBMC_communities_tSNE.png",
        height=5.75, width=5.75, dpi=300)
 
 comm.tsne
@@ -129,5 +139,5 @@ pbmc.meta$CellType[pbmc.meta$Community %in% c(9)] <- "macrophage"
 pbmc.meta$CellType[pbmc.meta$Community %in% c(8)] <- "neutrophil"
 
 write.table(pbmc.meta,
-            file="~/Dropbox/MNNfigures/10X_data/PBMC/PBMC_meta.tsv",
+            file="Droplet/10X_data/PBMC/PBMC_meta.tsv",
             row.names=F, sep="\t", quote=FALSE)
