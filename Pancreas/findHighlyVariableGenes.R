@@ -5,7 +5,8 @@
 # be retained in the environment if you use this approach, so files will be explicitly loaded.
 
 # define a convenience function for HVG definition
-find_hvg <- function(dataframe, plot=FALSE, p.threshold=1e-2, return.ranks=FALSE){
+find_hvg <- function(dataframe, plot=FALSE, p.threshold=1e-2, return.ranks=FALSE,
+                     return.p=FALSE){
   # define a set of highly variable gene for the GFP+ and GFP- separately
   require(MASS)
   require(limSolve)
@@ -74,6 +75,10 @@ find_hvg <- function(dataframe, plot=FALSE, p.threshold=1e-2, return.ranks=FALSE
     HVG <- order.names[thr.p]
   }
   
+  if(return.p){
+    HVG <- cbind(HVG, adj.pvals)
+  }  
+  
   return(HVG)
 }
 
@@ -86,13 +91,17 @@ gse81076.norm <- read.table("Pancreas/Data/GSE81076_SFnorm.tsv",
 # remove gene id column for hvg discovery, last column
 rownames(gse81076.norm) <- gse81076.norm$gene_id
 
-# output is a boolean vector of the same order as the input matrix
+# output is a data frame of the same order as the input matrix
+# need to output the p-value from HVG gene selection for
+# combination by meta-analysis later
 gse81076.HVG <- find_hvg(dataframe=gse81076.norm[, 1:(dim(gse81076.norm)[2]-1)], 
-                         p.threshold=1e-2, plot=FALSE, return.ranks=FALSE)
+                         p.threshold=1e-2, plot=FALSE, return.ranks=FALSE,
+                         return.p=TRUE)
 
 # select the highly variable genes from the input dataframe column 'gene id'
-gse81076.hvg_df <- cbind.data.frame(names(gse81076.HVG)[gse81076.HVG])
-colnames(gse81076.hvg_df) <- "gene_id"
+gse81076.hvg_df <- as.data.frame(gse81076.HVG[gse81076.HVG[, 1] == 1, ])
+gse81076.hvg_df$gene_id <- rownames(gse81076.hvg_df)
+colnames(gse81076.hvg_df) <- c("HVG", "pval", "gene_id")
 
 write.table(gse81076.hvg_df,
             file="Pancreas/Data/GSE81076-HVG.tsv",
@@ -110,11 +119,13 @@ rownames(gse85241.norm) <- gse85241.norm$gene_id
 
 # output is a boolean vector of the same order as the input matrix
 gse85241.HVG <- find_hvg(dataframe=gse85241.norm[, 1:(dim(gse85241.norm)[2]-1)], 
-                         p.threshold=1e-2, plot=FALSE, return.ranks=FALSE)
+                         p.threshold=1e-2, plot=FALSE, return.ranks=FALSE,
+                         return.p=TRUE)
 
 # select the highly variable genes from the input dataframe column 'gene id'
-gse85241.hvg_df <- cbind.data.frame(names(gse85241.HVG)[gse85241.HVG])
-colnames(gse85241.hvg_df) <- "gene_id"
+gse85241.hvg_df <- as.data.frame(gse85241.HVG[gse85241.HVG[, 1] == 1, ])
+gse85241.hvg_df$gene_id <- rownames(gse85241.hvg_df)
+colnames(gse85241.hvg_df) <- c("HVG", "pval", "gene_id")
 
 write.table(gse85241.hvg_df,
             file="Pancreas/Data/GSE85241-HVG.tsv",
@@ -133,11 +144,13 @@ rownames(gse86473.norm) <- gse86473.norm$gene_id
 
 # output is a boolean vector of the same order as the input matrix
 gse86473.HVG <- find_hvg(dataframe=gse86473.norm[, 1:(dim(gse86473.norm)[2]-1)], 
-                         p.threshold=1e-2, plot=FALSE, return.ranks=FALSE)
+                         p.threshold=1e-2, plot=FALSE, return.ranks=FALSE,
+                         return.p=TRUE)
 
 # select the highly variable genes from the input dataframe column 'gene id'
-gse86473.hvg_df <- cbind.data.frame(names(gse86473.HVG)[gse86473.HVG])
-colnames(gse86473.hvg_df) <- "gene_id"
+gse86473.hvg_df <- as.data.frame(gse86473.HVG[gse86473.HVG[, 1] == 1, ])
+gse86473.hvg_df$gene_id <- rownames(gse86473.hvg_df)
+colnames(gse86473.hvg_df) <- c("HVG", "pval", "gene_id")
 
 write.table(gse86473.hvg_df,
             file="Pancreas/Data/GSE86473-HVG.tsv",
@@ -152,14 +165,15 @@ emtab5061.norm <- read.table("Pancreas/Data/E-MTAB-5061_SFnorm.tsv",
 # remove gene id column for hvg discovery, last column
 rownames(emtab5061.norm) <- emtab5061.norm$gene_id
 
-
 # output is a boolean vector of the same order as the input matrix
 emtab5061.HVG <- find_hvg(dataframe=emtab5061.norm[, 1:(dim(emtab5061.norm)[2]-1)], 
-                         p.threshold=1e-2, plot=FALSE, return.ranks=FALSE)
+                         p.threshold=1e-2, plot=FALSE, return.ranks=FALSE,
+                         return.p=TRUE)
 
 # select the highly variable genes from the input dataframe column 'gene id'
-emtab5061.hvg_df <- cbind.data.frame(names(emtab5061.HVG)[emtab5061.HVG])
-colnames(emtab5061.hvg_df) <- "gene_id"
+emtab5061.hvg_df <- as.data.frame(emtab5061.HVG[emtab5061.HVG[, 1] == 1, ])
+emtab5061.hvg_df$gene_id <- rownames(emtab5061.hvg_df)
+colnames(emtab5061.hvg_df) <- c("HVG", "pval", "gene_id")
 
 write.table(emtab5061.hvg_df,
             file="Pancreas/Data/E-MTAB-5061-HVG.tsv",
