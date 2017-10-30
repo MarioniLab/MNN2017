@@ -7,6 +7,7 @@ library(scales)
 library(scran)
 library(ggplot2)
 library(cowplot)
+library(RColorBrewer)
 ############
 # GSE81076 #
 ############
@@ -236,27 +237,22 @@ all.meta$CellType[grepl(all.meta$CellType, pattern="PSC")] <- "other"
 # this needs to drop any all-zero rows/columns
 raw.hvg <- raw.all[rownames(raw.all) %in% common.hvgs, ]
 
-## set cell type colorings
-allcolors <- c("#cc0000", "#f59500", 
-               "#c400ff", "#00c4cc",
-               "#3200ff", "#000000",
-               "#d4d400")
-names(allcolors) <- unique(all.meta$CellType)
-
 # construct a variable that captures interaction between cell types and batch
 # colour by cell type, shade by batch
 # note not all cell types are present in GSE86473
-all.meta$Interact <- as.factor(paste(all.meta$CellType, all.meta$Study, sep="."))
-acinar <- c("#ffff00", "#d4d432", "#d4d496")
-alpha <- c("#ff0000", "#9b3232", "#cc6464", "#cc9696")
-beta <- c("#c400ff", "#c496ff", "#7e00b9", "#60329b")
-delta <- c("#ff7800", "#ffaa64", "#c84b23", "#c87d64")
-ductal <- c("#00f5ff", "#00c8c8", "#006464")
-gamma <- c("#0000ff", "#6464e1", "#afafe1", "#000087")
-other <- c("#000000", "#323232", "#646464")
+acinar <- c("#ffff00")#, "#d4d432", "#d4d496")
+alpha <- c("#ff0000")#, "#9b3232", "#cc6464", "#cc9696")
+beta <- c("#c400ff")#, "#c496ff", "#7e00b9", "#60329b")
+delta <- c("#ff7800")#, "#ffaa64", "#c84b23", "#c87d64")
+ductal <- c("#00f5ff")#, "#00c8c8", "#006464")
+gamma <- c("#0000ff")#, "#6464e1", "#afafe1", "#000087")
+other <- c("#000000")#, "#323232", "#646464")
 
 interact.cols <- c(acinar, alpha, beta, delta, ductal, gamma, other)
-names(interact.cols) <- levels(all.meta$Interact)
+names(interact.cols) <- levels(all.meta$CellType)
+
+batch.cols <- brewer.pal(4, "Set3")
+names(batch.cols) <- unique(all.meta$Study)
 
 ##########################################################################
 ##########################################################################
@@ -274,19 +270,35 @@ unc.merge <- merge(unc.tsne, all.meta, by='Sample')
 
 # plot of points by cell type and shape by study
 unc.bycell <- ggplot(unc.merge, aes(x=Dim1, y=Dim2, 
-                                    fill=Interact,
-                                    group=Interact)) +
-  geom_point(size=1, shape=21) + theme_classic() +
+                                    fill=CellType,
+                                    group=CellType)) +
+  geom_point(size=2, shape=21) + theme_classic() +
   scale_fill_manual(values=interact.cols) +
-  scale_y_continuous(limits=c(-40, 40)) +
-  scale_x_continuous(limits=c(-40, 40)) +
-  #guides(colour=TRUE) +
-  labs(x="tSNE 1", y="tSNE 2", title="Uncorrected")
+  scale_y_continuous(limits=c(-50, 50)) +
+  scale_x_continuous(limits=c(-50, 50)) +
+  labs(x="tSNE 1", y="tSNE 2", title="Uncorrected") +
+  guides(fill=FALSE) +
+  theme(axis.title=element_text(size=24), axis.text=element_text(size=16))
 
 ggsave(unc.bycell,
        filename="Pancreas/Uncorrected_pancreas-tSNE.png",
        height=5.75, width=9.3035, dpi=300)
 
+# plot of points by cell type and shape by study
+unc.bybatch <- ggplot(unc.merge, aes(x=Dim1, y=Dim2, 
+                                    fill=Study,
+                                    group=Study)) +
+  geom_point(size=2, shape=21) + theme_classic() +
+  scale_fill_manual(values=batch.cols) +
+  scale_y_continuous(limits=c(-50, 50)) +
+  scale_x_continuous(limits=c(-50, 50)) +
+  labs(x="tSNE 1", y="tSNE 2", title="Uncorrected") +
+  guides(fill=FALSE) +
+  theme(axis.title=element_text(size=24), axis.text=element_text(size=16))
+
+ggsave(unc.bybatch,
+       filename="Pancreas/Uncorrected_by_batch_pancreas-tSNE.png",
+       height=5.75, width=9.3035, dpi=300)
 ##########################################################################
 ##########################################################################
 ## MNN batch correction
@@ -318,19 +330,35 @@ mnn.merge <- merge(mnn.tsne, all.meta, by='Sample')
 
 # plot of points by cell type and shape by study
 mnn.bycell <- ggplot(mnn.merge, aes(x=Dim1, y=Dim2, 
-                                    fill=Interact,
-                                    group=Interact)) +
-  geom_point(size=1.5, shape=21, alpha=1) + theme_classic() +
+                                    fill=CellType,
+                                    group=CellType)) +
+  geom_point(size=2, shape=21, alpha=1) + theme_classic() +
   scale_fill_manual(values=interact.cols) +
-  scale_y_continuous(limits=c(-40, 40)) +
-  scale_x_continuous(limits=c(-40, 40)) +
-  #guides(colour=TRUE) +
-  labs(x="tSNE 1", y="tSNE 2", title="MNN corrected")
+  scale_y_continuous(limits=c(-50, 50)) +
+  scale_x_continuous(limits=c(-50, 50)) +
+  labs(x="tSNE 1", y="tSNE 2", title="MNN corrected") +
+  guides(fill=FALSE) +
+  theme(axis.title=element_text(size=24), axis.text=element_text(size=16))
 
 ggsave(mnn.bycell,
        filename="Pancreas/MNNcorrect_pancreas-tSNE.png",
        height=5.75, width=9.3035, dpi=300)
 
+# plot of points by cell type and shape by study
+mnn.bybatch <- ggplot(mnn.merge, aes(x=Dim1, y=Dim2, 
+                                     fill=Study,
+                                     group=Study)) +
+  geom_point(size=2, shape=21) + theme_classic() +
+  scale_fill_manual(values=batch.cols) +
+  scale_y_continuous(limits=c(-50, 50)) +
+  scale_x_continuous(limits=c(-50, 50)) +
+  labs(x="tSNE 1", y="tSNE 2", title="MNN corrected") +
+  guides(fill=FALSE) +
+  theme(axis.title=element_text(size=24), axis.text=element_text(size=16))
+
+ggsave(mnn.bybatch,
+       filename="Pancreas/MNNcorrect_by_batch_pancreas-tSNE.png",
+       height=5.75, width=9.3035, dpi=300)
 ##########################################################################
 ##########################################################################
 ## limma batch correction
@@ -355,19 +383,35 @@ lm.merge <- merge(lm.tsne, all.meta, by='Sample')
 
 # plot by cell type, and shape by batch ID
 lm.bycell <- ggplot(lm.merge, aes(x=Dim1, y=Dim2, 
-                                    fill=Interact,
-                                    group=Interact)) +
-  geom_point(size=1.5, shape=21, alpha=1) + theme_classic() +
+                                    fill=CellType,
+                                    group=CellType)) +
+  geom_point(size=2, shape=21, alpha=1) + theme_classic() +
   scale_fill_manual(values=interact.cols) +
-  scale_y_continuous(limits=c(-40, 40)) +
-  scale_x_continuous(limits=c(-40, 40)) +
-  #guides(colour=TRUE) +
-  labs(x="tSNE 1", y="tSNE 2", title="limma corrected")
+  scale_y_continuous(limits=c(-50, 50)) +
+  scale_x_continuous(limits=c(-50, 50)) +
+  labs(x="tSNE 1", y="tSNE 2", title="limma corrected") +
+  guides(fill=FALSE) +
+  theme(axis.title=element_text(size=24), axis.text=element_text(size=16))
 
 ggsave(lm.bycell,
        filename="Pancreas/limma_pancreas-tSNE.png",
        height=5.75, width=9.3035, dpi=300)
 
+# plot of points by cell type and shape by study
+lm.bybatch <- ggplot(lm.merge, aes(x=Dim1, y=Dim2, 
+                                     fill=Study,
+                                     group=Study)) +
+  geom_point(size=2, shape=21) + theme_classic() +
+  scale_fill_manual(values=batch.cols) +
+  scale_y_continuous(limits=c(-50, 50)) +
+  scale_x_continuous(limits=c(-50, 50)) +
+  labs(x="tSNE 1", y="tSNE 2", title="limma corrected") +
+  guides(fill=FALSE) +
+  theme(axis.title=element_text(size=24), axis.text=element_text(size=16))
+
+ggsave(lm.bybatch,
+       filename="Pancreas/limma_by_batch_pancreas-tSNE.png",
+       height=5.75, width=9.3035, dpi=300)
 ##########################################################################
 ##########################################################################
 ## ComBat correction
@@ -387,19 +431,35 @@ combat.merge <- merge(combat.tsne, all.meta, by='Sample')
 
 # plot by cell type, and shape by batch ID
 combat.bycell <- ggplot(combat.merge, aes(x=Dim1, y=Dim2, 
-                                  fill=Interact,
-                                  group=Interact)) +
-  geom_point(size=1.5, shape=21, alpha=1) + theme_classic() +
+                                  fill=CellType,
+                                  group=CellType)) +
+  geom_point(size=2, shape=21, alpha=1) + theme_classic() +
   scale_fill_manual(values=interact.cols) +
-  scale_y_continuous(limits=c(-40, 40)) +
-  scale_x_continuous(limits=c(-40, 40)) +
-  #guides(colour=TRUE) +
-  labs(x="tSNE 1", y="tSNE 2", title="ComBat corrected")
+  scale_y_continuous(limits=c(-50, 50)) +
+  scale_x_continuous(limits=c(-50, 50)) +
+  labs(x="tSNE 1", y="tSNE 2", title="ComBat corrected") +
+  guides(fill=FALSE) +
+  theme(axis.title=element_text(size=24), axis.text=element_text(size=16))
 
 ggsave(combat.bycell,
        filename="Pancreas/ComBat_pancreas-tSNE.png",
        height=5.75, width=9.3035, dpi=300)
 
+# plot of points by cell type and shape by study
+combat.bybatch <- ggplot(combat.merge, aes(x=Dim1, y=Dim2,
+                                        fill=Study,
+                                        group=Study)) +
+  geom_point(size=2, shape=21) + theme_classic() +
+  scale_fill_manual(values=batch.cols) +
+  scale_y_continuous(limits=c(-50, 50)) +
+  scale_x_continuous(limits=c(-50, 50)) +
+  labs(x="tSNE 1", y="tSNE 2", title="ComBat corrected") +
+  guides(fill=FALSE) +
+  theme(axis.title=element_text(size=24), axis.text=element_text(size=16))
+
+ggsave(combat.bybatch,
+       filename="Pancreas/ComBat_by_batch_pancreas-tSNE.png",
+       height=5.75, width=9.3035, dpi=300)
 ##########################################################################
 ##########################################################################
 # write out a single file for all of the corrected data and a 
@@ -416,26 +476,27 @@ require(cluster)
 ct.fac <- factor(all.meta$CellType)
 # only calculate silhouette on alpha cells.
 
-dd.unc <- as.matrix(dist(tsne.unc$Y)) 
+dd.unc <- as.matrix(dist(uncorrected))
 score_sil <- silhouette(as.numeric(ct.fac), dd.unc)
-sil_unc <- score_sil[, 3]  #for uncorrected data
+# alpha islets are in cluster 2
+sil_unc <- score_sil[score_sil[, 1] == 2, 3]  #for uncorrected data
 
-dd.c <- as.matrix(dist(tsne.c$Y))
+dd.c <- as.matrix(dist(corrected.mat))
 score_sil <- silhouette(as.numeric(ct.fac), dd.c)
-sil_c<-score_sil[,3] #for MNN corrected data
+sil_c <- score_sil[score_sil[, 1] == 2, 3] #for MNN corrected data
 
-dd.lm <- as.matrix(dist(tsne.lm$Y))
+dd.lm <- as.matrix(dist(lm.mat))
 score_sil <- silhouette(as.numeric(ct.fac), dd.lm)
-sil_lm<-score_sil[,3] #for limma corrected data
+sil_lm <- score_sil[score_sil[, 1] == 2, 3] #for limma corrected data
 
 dd.com <- as.matrix(dist(tsne.combat$Y))
 score_sil <- silhouette(as.numeric(ct.fac), dd.com)
-sil_com<-score_sil[,3] #for ComBat corrected data
+sil_com <- score_sil[score_sil[, 1] == 2, 3] #for ComBat corrected data
 
 ### boxplot of Silhouette coefficients
 sils <- cbind(sil_unc, sil_c, sil_lm, sil_com)
 
-png(file="sils_alltypes_tsnespace.png", width=900, height=700)
+png(file="sils_alphaIslet_tsnespace.png", width=900, height=700)
 par(mfrow=c(1, 1), mar=c(4, 6, 2, 2), cex.axis=1.5, cex.main=2, cex.lab=2)
 boxplot(sils, main="", names=c("Raw", "MNN", "limma", "ComBat"),
         ylim=c(-0.4, 0.4),
