@@ -1,2 +1,0 @@
-Estimated Number of Cells,Mean Reads per Cell,Median Genes per Cell,Number of Reads,Valid Barcodes,Reads Mapped Confidently to Transcriptome,Reads Mapped Confidently to Exonic Regions,Reads Mapped Confidently to Intronic Regions,Reads Mapped Confidently to Intergenic Regions,Sequencing Saturation,Q30 Bases in Barcode,Q30 Bases in RNA Read,Q30 Bases in Sample Index,Q30 Bases in UMI,Fraction Reads in Cells,Total Genes Detected,Median UMI Counts per Cell
-"4,532","73,962","1,067","335,198,537",98.4%,62.2%,66.3%,21.7%,3.2%,89.5%,97.7%,79.5%,95.2%,97.8%,88.5%,"18,908","3,749"
