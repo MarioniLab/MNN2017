@@ -1,94 +1,124 @@
+#SET WORKING DIRECTORY ######
+this.dir <- dirname(parent.frame(2)$ofile)
+setwd(this.dir)
+
+library(scales)
+require(WGCNA)
 require(scran)
-library(scater)
 
-####################################
-# Create a directory for the mesoderm data.
+#######
+source("../SomeFuncs/match_gene_names.R")
+############
 
-dir.create("meso", showWarnings=FALSE)
-count.file <- file.path("meso", "counts.txt")
+setwd(paste0(this.dir,"/meso"))
 
-if (!file.exists(count.file)) { 
-    download.file("http://gastrulation.stemcells.cam.ac.uk/data/counts.gz","meso/counts.gz")
-    system("cd meso; tar -xvf counts.gz") # god knows why they named it like this.
+#load and read data&metadata scialdon3 2016
+#download.file("http://gastrulation.stemcells.cam.ac.uk/data/counts.gz","counts.txt")
+#download.file("http://gastrulation.stemcells.cam.ac.uk/data/metadataTal1.txt","metadata.txt")
+
+data.meso<-read.table("counts.txt", head=T)
+meta.data<-read.table("metadata.txt", head=T)
+
+meso.cluster<-as.character(meta.data$cluster)
+meso.stage<-as.character(meta.data$embryoStage)
+
+row.names(meta.data)<-meta.data[,"cellName"]
+#load highly variable genes (HVG)
+load("high_var_genes.RData")# HVG across all cells, got from the authors
+hvg.meso<-high.var.genes.all
+
+##match the genes names to ENS
+out<-matchgenenamestoENS(hvg.meso,idknown = TRUE)
+hvg.meso<-unique(out$mgi_symbol)
+#################scran size factor normalisation for mesodermal data
+sce = newSCESet(countData = data.meso)
+#filter low abundance genes
+sce = sce[calcAverage(sce)>0.1,]
+clusts <- quickCluster(sce, min.size=120)
+#number of cells in each cluster should be at least twice that of the largest 'sizes'
+min.clust = min(table(clusts))/2
+new_sizes = c(floor(min.clust/3), floor(min.clust/2), floor(min.clust))
+sce = computeSumFactors(sce, clusters = clusts, sizes = new_sizes)
+#extract size factors
+sfs = sizeFactors(sce)
+#normalise data
+sce = normalise(sce)
+#dataF2 <- data.frame(exprs(sce))
+data.meso <- t(t(counts(sce))/sizeFactors(sce))
+data.meso<-log(1+data.meso)
+#######download and read Wolf's data
+setwd(paste0(this.dir,"/wolf"))
+#download.file("https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE100597&format=file&file=GSE100597%5Fcount%5Ftable%5FQC%5Ffiltered%2Etxt%2Egz","Total_table_NoTrof.bed")
+data.wolf<-read.table("Total_table_NoTrof.bed",sep="\t",stringsAsFactors = F, head=T)
+datainfo<-read.table("Cell_clusters.txt",sep="\t",stringsAsFactors = F, head=T)  #got from the authors
+batch<-datainfo$Plate
+######################
+source('../../SomeFuncs/highly_var_genes.R')
+genes<-row.names(data.wolf)
+
+hvg.wolf<-find.high.var.biol.genes(data.wolf, genes, red.line=TRUE, 0.01,minMean=1, plot=TRUE)
+hvg.wolf<-hvg.wolf$genes.high.var
+hvg.wolf<-hvg.wolf[-which(is.na(hvg.wolf))]
+
+#clean gene names for matching
+genes<-gsub( "_.*$", "", genes)
+hvg.wolf<-gsub( "_.*$", "", hvg.wolf)
+#######scran size factor normalisation for wolf's data
+sce = newSCESet(countData = data.wolf)
+#filter low abundance genes
+sce = sce[calcAverage(sce)>0.1,]
+clusts <- quickCluster(sce, min.size=120)
+#number of cells in each cluster should be at least twice that of the largest 'sizes'
+min.clust = min(table(clusts))/2
+new_sizes = c(floor(min.clust/3), floor(min.clust/2), floor(min.clust))
+sce = computeSumFactors(sce, clusters = clusts, sizes = new_sizes)
+#extract size factors
+sfs = sizeFactors(sce)
+#normalise data
+sce = normalise(sce)
+#dataF2 <- data.frame(exprs(sce))
+data.wolf <- t(t(counts(sce))/sizeFactors(sce))
+data.wolf<-log(1+data.wolf)
+
+Stage<-datainfo$Stage
+Lineage<-datainfo$Lineage
+
+genes.wolf<-row.names(data.wolf)
+
+## match gene names between the two data sets and pick the common genes
+out<-matchgenenamestoENS(row.names(data.meso),idknown = TRUE)
+dupls<-which(duplicated(out$ensembl_gene_id))
+if (length(dupls)>0) {
+out<-out[-dupls,]
+data.meso<-data.meso[-dupls,]}
+dupls<-which(duplicated(out$mgi_symbol))
+if (length(dupls)>0) {
+out<-out[-dupls,]
+data.meso<-data.meso[-dupls,]
 }
-data.meso <- read.table(count.file, header=TRUE, row.names=1)
-
-# Compute size factors.
-sce.meso <- SingleCellExperiment(list(counts=as.matrix(data.meso)))
-
-high.ab <- calcAverage(sce.meso)>1
-clusts <- quickCluster(sce.meso, method="igraph", subset.row=high.ab, min.size=100)
-sce.meso <- computeSumFactors(sce.meso, clusters = clusts, subset.row=high.ab)
-
-pdf(file.path("meso", "norm.pdf"))
-plot(colSums(counts(sce.meso)), sizeFactors(sce.meso))
-dev.off()
-
-sce.meso <- normalise(sce.meso)
-
-# Discovering highly variable genes using the Brennecke method.
-meso.var <- technicalCV2(sce.meso, spike.type=NA, min.bio.disp=0)
-hvg.meso <- meso.var$FDR <= 0.05 & !is.na(meso.var$FDR)
-
-pdf(file.path("meso", "hvg.pdf"))
-plot(meso.var$mean, meso.var$cv2, log="xy", pch=16, cex=0.5)
-o <- order(meso.var$mean)
-lines(meso.var$mean[o], meso.var$trend[o], col="red")
-dev.off()
-
-####################################
-# Create a directory for Wolf's data.
-
-dir.create("wolf", showWarnings=FALSE)
-count.file <- "wolf/GSE100597_count_table_QC_filtered.txt.gz"
-if (!file.exists(count.file)) { 
-    download.file("https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE100597&format=file&file=GSE100597%5Fcount%5Ftable%5FQC%5Ffiltered%2Etxt%2Egz", count.file)
+genes.wolf<-gsub( "_.*$", "", genes.wolf)
+duplwolf<-which(duplicated(genes.wolf))
+if (length(duplwolf)>0) {
+genes.wolf<-genes.wolf[-duplwolf]
+data.wolf<-data.wolf[-duplwolf,]
 }
+row.names(data.wolf)<-genes.wolf
+commongenes<-intersect(out$mgi_symbol,row.names(data.wolf))
 
-data.wolf <- read.table(count.file, sep="\t", stringsAsFactors = FALSE, header = TRUE, row.names=1)
+out2<-matchgenenamestoENS(commongenes,idknown=FALSE)
+dupls<-which(duplicated(out2$mgi_symbol))
+if (length(dupls)>0) {
+out2<-out2[-dupls,]}
+dupls<-which(duplicated(out2$ensembl_gene_id))
 
-# Compute size factors.
-sce.wolf <- SingleCellExperiment(list(counts=as.matrix(data.wolf)))
+data.wolf.2<-data.wolf[out2$mgi_symbol,]
+data.meso.2<-data.meso[match(out2$ensembl_gene_id,row.names(data.meso)),]
 
-high.ab <- calcAverage(sce.wolf)>1
-clusts <- quickCluster(sce.wolf, method="igraph", subset.row=high.ab)
-sce.wolf <- computeSumFactors(sce.wolf, clusters = clusts, subset.row=high.ab)
+row.names(data.meso.2)<-row.names(data.wolf.2)
+nas<-which(is.na(rowSums(data.meso.2)))
+data.meso.2<-data.meso.2[-nas,]
+data.wolf.2<-data.wolf.2[-nas,]
 
-pdf(file.path("wolf", "norm.pdf"))
-plot(colSums(counts(sce.wolf)), sizeFactors(sce.wolf))
-dev.off()
-
-sce.wolf <- normalise(sce.wolf)
-
-# Discovering highly variable genes using the Brennecke method.
-wolf.var <- technicalCV2(sce.wolf, spike.type=NA, min.bio.disp=0)
-hvg.wolf <- wolf.var$FDR <= 0.05 & !is.na(wolf.var$FDR)
-
-pdf(file.path("wolf", "hvg.pdf"))
-plot(wolf.var$mean, wolf.var$cv2, log="xy", pch=16, cex=0.5)
-o <- order(wolf.var$mean)
-lines(wolf.var$mean[o], wolf.var$trend[o], col="red")
-dev.off()
-
-####################################
-# Match gene names to ensembl IDs in the Wolf data set.
-
-data.meso <- exprs(sce.meso)
-data.wolf <- exprs(sce.wolf)
-
-library(biomaRt)
-mart <- useMart("ensembl", dataset = "mmusculus_gene_ensembl", host="www.ensembl.org")
-cleaned.names <- gsub( "_.*$", "", rownames(data.wolf))
-wolf.anno <- getBM(attributes = c("ensembl_gene_id", "mgi_symbol"), values = cleaned.names, mart = mart, filters = "mgi_symbol")
-wolf.ens <- wolf.anno$ensembl_gene_id[match(cleaned.names, wolf.anno$mgi_symbol)] # need to get back to input order!
-wolf.ens <- ifelse(is.na(wolf.ens), cleaned.names, wolf.ens)
-rownames(data.wolf) <- wolf.ens
-
-# Picking genes that are present in both data sets, _and_ are also HVGs.
-in.both <- intersect(wolf.ens, rownames(data.meso)) 
-any.hvg <- union(rownames(data.wolf)[hvg.wolf], rownames(data.meso)[hvg.meso])
-any.hvg <- intersect(in.both, any.hvg) 
-
-data.meso <- data.meso[in.both,]
-data.wolf <- data.wolf[in.both,]
-save(file="mesoandwolf.Rdata", data.meso, data.wolf, any.hvg)
+hvg.meso<-intersect(hvg.meso,row.names(data.meso.2)) #
+hvg_genes<-intersect(row.names(data.meso.2),union(hvg.meso,hvg.wolf)) #common hvg_genes
+save(file="../mesoandwolf.Rdata",data.meso.2,data.wolf.2,hvg_genes)
