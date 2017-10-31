@@ -1,6 +1,6 @@
 library(scran)
 require(Rtsne)
-load("mesoandwolf.Rdata") 
+load("mesoandwolf.RData") 
 dir.create("results", showWarnings=FALSE)
 
 #########################################################
@@ -68,9 +68,9 @@ first.batch <- rep(c(TRUE, FALSE), c(ncol(data.wolf.2), ncol(data.meso.2)))
 
 typing <- c(new.labs.wolf, new.labs.meso)
 color.legend <- c("Epiblast-PS (E6.5)"="salmon",
-                  "Epiblast (E4.5)"= "lightblue",
-                  "Epiblast (E5.5)"="dodgerblue",
-                  "Epiblast (E6.5)"="blue",
+                  "Epiblast (E4.5)"= "red",
+                  "Epiblast (E5.5)"="lightblue",
+                  "Epiblast (E6.5)"="dodgerblue",
                   "Epiblast (E6.75)"="darkblue")
 cols <- color.legend[typing]
 other <- is.na(cols)
