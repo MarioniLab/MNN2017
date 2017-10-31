@@ -10,29 +10,29 @@ library(stringr)
 library(WGCNA)
 library(biomaRt)
 library(igraph)
-source("~/Dropbox/R_sessions/SingleCellFunctions/single_cell_functions.R")
+source("SomeFuncs/convenience_functions.R")
 
-tcell <- read.table("~/Dropbox/MNNfigures/10X_data/Tcell/Tcell_norm.tsv",
+tcell <- read.table("Droplet/10X_data/Tcell/Tcell_norm.tsv",
                     h=T, sep="\t", stringsAsFactors=FALSE)
 
 rownames(tcell) <- tcell$gene_id
 
-tcell.hvg <- read.table("~/Dropbox/MNNfigures/10X_data/Tcell/Tcell_hvg.tsv",
+tcell.hvg <- read.table("Droplet/10X_data/Tcell/Tcell_hvg.tsv",
                         h=T, sep="\t", stringsAsFactors=FALSE)
 
-tcell.meta <- read.table("~/Dropbox/MNNfigures/10X_data/Tcell/Tcell_meta.tsv",
+tcell.meta <- read.table("Droplet/10X_data/Tcell/Tcell_meta.tsv",
                         h=T, sep="\t", stringsAsFactors=FALSE)
 tcell.meta$Sample <- paste("tcell", tcell.meta$Sample, sep=".")
 tcell.meta$Sample <- gsub(tcell.meta$Sample, pattern="-", replacement=".")
 
-pbmc <- read.table("~/Dropbox/MNNfigures/10X_data/PBMC/PBMC_norm.tsv",
+pbmc <- read.table("Droplet/10X_data/PBMC/PBMC_norm.tsv",
                    h=T, sep="\t", stringsAsFactors=FALSE)
 rownames(pbmc) <- pbmc$gene_id
 
-pbmc.hvg <- read.table("~/Dropbox/MNNfigures/10X_data/PBMC/PBMC_hvg.tsv",
+pbmc.hvg <- read.table("Droplet/10X_data/PBMC/PBMC_hvg.tsv",
                        h=T, sep="\t", stringsAsFactors=FALSE)
 
-pbmc.meta <- read.table("~/Dropbox/MNNfigures/10X_data/PBMC/PBMC_meta.tsv",
+pbmc.meta <- read.table("Droplet/10X_data/PBMC/PBMC_meta.tsv",
                         h=T, sep="\t", stringsAsFactors=FALSE)
 pbmc.meta$Sample <- paste("pbmc", pbmc.meta$Sample, sep=".")
 pbmc.meta$Sample <- gsub(pbmc.meta$Sample, pattern="-", replacement=".")
@@ -42,7 +42,7 @@ pbmc.meta$Sample <- gsub(pbmc.meta$Sample, pattern="-", replacement=".")
 select.genes <- intersect(rownames(tcell), rownames(pbmc))
 select.hvg <- intersect(tcell.hvg$HVG, pbmc.hvg$HVG)
 
-# there are only ~200 HVG shared between both data sets
+# there are only ~300 HVG shared between both data sets
 tcell.batch <- tcell[tcell$gene_id %in% select.genes, 1:(dim(tcell)[2]-1)]
 colnames(tcell.batch) <- paste("tcell", colnames(tcell.batch), sep=".")
 
@@ -90,7 +90,7 @@ label_cols <- c("#386cb0", "#fdb462",
                 "#ffff33", "#b2df8a")
 names(label_cols) <- unique(tsne.merge$CellType)
 
-# looks pretty good!  Not bad for only 236 genes!!!
+# looks pretty good!  Not bad for only 306 genes!!!
 by.label <- ggplot(tsne.merge, aes(x=Dim1, y=Dim2, fill=CellType)) +
   geom_point(size=3, shape=21) + theme_classic() +
   labs(x="tSNE Dimension 1", y="tSNE Dimension 2") +
@@ -100,7 +100,7 @@ by.label <- ggplot(tsne.merge, aes(x=Dim1, y=Dim2, fill=CellType)) +
         axis.text=element_text(size=16, colour='black'))
 
 ggsave(by.label, 
-       filename="~/Dropbox/MNNfigures/10X_data/PBMC_Tcell-4K_bylabel-tSNE.png",
+       filename="Droplet/10X_data/PBMC_Tcell-4K_bylabel-tSNE.png",
        height=5.5, width=7.5, dpi=300)
 
 # let's construct an SNN graph out of this and see how that looks
@@ -111,7 +111,7 @@ correct.community <- cluster_walktrap(correct.snn, steps=4)
 n.comms <- length(correct.community)
 print(n.comms)
 
-# vertex community membership 
+# vertex community membership
 correct.members <- correct.community$membership
 correct.clusters <- cbind.data.frame(colnames(correct.df[, 2:dim(correct.df)[2]]), correct.members)
 colnames(correct.clusters) <- c("Sample", "Community")
@@ -131,8 +131,8 @@ comm.tsne <- ggplot(correct.max,
         axis.text=element_text(size=16, colour='black'))
 
 ggsave(comm.tsne,
-       filename="~/Dropbox/MNNfigures/10X_data/PBMC_Tcell-4K-tSNE.png",
-       height=4.75, width=4.5, dpi=300)
+       filename="Droplet/10X_data/PBMC_Tcell-4K-tSNE.png",
+       height=5.5, width=7.5, dpi=300)
 
 # now it would be a good idea to check the corresponding cell labels
 table(correct.max$Community.y, correct.max$Study)
@@ -148,12 +148,12 @@ table(correct.max$CellType, correct.max$Community.y)
 
 correct.max$Community.CellType <- "Unassigned"
 correct.max$Community.CellType[correct.max$Community.y %in% c(5)] <- "B_cell"
-correct.max$Community.CellType[correct.max$Community.y %in% c(12)] <- "basophil"
-correct.max$Community.CellType[correct.max$Community.y %in% c(2)] <- "macrophage"
+correct.max$Community.CellType[correct.max$Community.y %in% c(13)] <- "macrophage"
 correct.max$Community.CellType[correct.max$Community.y %in% c(9)] <- "neutrophil"
-correct.max$Community.CellType[correct.max$Community.y %in% c(2)] <- "monocyte"
-correct.max$Community.CellType[correct.max$Community.y %in% c(1, 3, 4, 6, 8, 10, 13)] <- "T_cell"
+correct.max$Community.CellType[correct.max$Community.y %in% c(1, 2)] <- "monocyte"
+correct.max$Community.CellType[correct.max$Community.y %in% c(3, 4, 6, 7, 8, 11, 12, 14:16)] <- "T_cell"
 table(correct.max$Study, correct.max$Community.CellType)
+table(correct.max$CellType, correct.max$Community.CellType)
 
 new.cols <- c("#386cb0", "#518A87",
               "#7fc97f","#ef3b2c","#662506",
