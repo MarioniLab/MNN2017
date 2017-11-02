@@ -32,7 +32,7 @@ celltypes <- c(colnames(logDataF3), colnames(logDataA3))
 pca.retain <- celltypes %in% c("MEP", "GMP", "CMP") 
 
 # Making a plotting function.
-plotFUN <- function(fname, Y, subset=NULL, ..., xlab="tSNE 1",ylab="tSNE 2") {
+plotFUN <- function(fname, Y, subset=NULL, ..., xlab="tSNE 1",ylab="tSNE 2",main="") {
   if (is.null(subset)) {
     subset <- seq_len(nrow(Y))
   }
@@ -41,10 +41,11 @@ plotFUN <- function(fname, Y, subset=NULL, ..., xlab="tSNE 1",ylab="tSNE 2") {
   plot(Y[,1], Y[,2], cex=2,
        pch=ifelse(first.batch, 21, 1)[subset], 
        col=ifelse(first.batch, "black", allcolors)[subset],
-       bg=allcolors[subset], xlab=xlab, ylab=ylab) 
+       bg=allcolors[subset], xlab=xlab, ylab=ylab, main=main) 
     dev.off()
 }
 
+batchcolor=c("lavender","lightcoral")
 plotFUNb <- function(fname, Y, subset=NULL, ...) {
   if (is.null(subset)) {
     subset <- seq_len(nrow(Y))
@@ -53,8 +54,8 @@ plotFUNb <- function(fname, Y, subset=NULL, ...) {
   par(mfrow=c(1,1),mar=c(6,6,4,2),cex.axis=2,cex.main=3,cex.lab=2.5)
   plot(Y[,1], Y[,2], cex=2,
        pch=ifelse(first.batch, 21, 1)[subset], 
-       col=ifelse(first.batch, "black", batch)[subset],
-       bg=batch[subset], ...)#,  xlab="tSNE 1",ylab="tSNE 2")
+       col=ifelse(first.batch, "black", batchcolor[batch[subset]]),
+       bg=batchcolor[batch[subset]], ...)#,  xlab="tSNE 1",ylab="tSNE 2")
   dev.off()
 }
 
@@ -99,7 +100,7 @@ set.seed(0)
 all.dists.mnn <- as.matrix(dist(t.mnn))
 tsne.mnn <- Rtsne(all.dists.mnn, is_distance=TRUE, perplexity = 90)
 plotFUN("results/mnnFA.png", tsne.mnn$Y, main="MNN",  xlab="tSNE 1",ylab="tSNE 2")
-plotFUNb("results/mnnFAb.png", tsne.mnn$Y, main="MNN",  xlab="tSNE 1",ylab="tSNE 2")
+plotFUNb("results/mnnFAb3.png", tsne.mnn$Y, main="MNN",  xlab="tSNE 1",ylab="tSNE 2")
 
 set.seed(0)
 tsne.mnn2 <- Rtsne(t.mnn, perplexity = 90)
