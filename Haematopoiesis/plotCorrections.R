@@ -85,7 +85,7 @@ gc()
 ######################## 
 # Performing the correction with MNN (turned down the sigma to improve mixing).
 
-mnn.out <- mnnCorrect2(logDataF3, logDataA3, k=20, sigma=0.1, cos.norm=TRUE, svd.dim=0)
+mnn.out <- mnnCorrect(logDataF3, logDataA3, k=20, sigma=0.1, cos.norm=TRUE, svd.dim=0)
 X.mnn <- cbind(mnn.out$corrected[[1]], mnn.out$corrected[[2]])
 t.mnn <- t(X.mnn)
 
