@@ -1,4 +1,6 @@
 # This script compares the performance of various batch correction methods.
+this.dir <- dirname(parent.frame(2)$ofile)
+setwd(this.dir)
 
 library(scran)
 require(Rtsne)
@@ -76,7 +78,7 @@ for (easy in c(FALSE, TRUE)) {
 png(file="figs/leg.png",width=900,height=700)
 plot.new()
 legend("topleft", legend = c("Cell type 1", "Cell type 2", "Cell type 3", "Batch 1", "Batch 2"),
-       col = c("brown1", "dark green", "blue", "black", "black"), 
+       col = c("brown1", "gold2", "blue", "black", "black"), 
        pch = c(15, 15, 15, 16, 2),
        cex = 2.7,bty = "n")   
 dev.off()

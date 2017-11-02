@@ -1,5 +1,7 @@
 # This script generates some (highly synthetic!) expression data with a batch effect 
 # and uneven population composition between batches.
+this.dir <- dirname(parent.frame(2)$ofile)
+setwd(this.dir)
 
 ncells <- 1000  # Number of cells
 
@@ -28,7 +30,7 @@ samples1 <- cbind(rnorm(n=ncells, mean=xmus[comp1],sd=xsds[comp1]),
                   rnorm(n=ncells, mean=ymus[comp1],sd=ysds[comp1]))
     
 # Plot the true cluster locations for batch 1
-ref.cols <- c("blue", "brown1", "dark green")
+ref.cols <- c("blue", "brown1", "gold2")
 clust1 <- ref.cols[comp1]
 plot(samples1, pch=16, cex=1.5, col=clust1, main=paste0("Batch 1"))
 
