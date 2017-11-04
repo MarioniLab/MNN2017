@@ -1,7 +1,7 @@
 ---
 title: "PancreasDE"
 author: "Mike Morgan"
-date: "04 July 2017"
+date: "27 October 2017"
 output: html_document
 ---
 
@@ -120,33 +120,24 @@ First we'll load all of the raw and batch corrected data into the R environment.
 ```{r, echo=TRUE, warning=FALSE, message=FALSE}
 # all paths assume code is executed in the MNN2017 repository directory
 # change these as necessary
+# all corrected data are in a single file
+all.correct <- read.table("../Pancreas/Data/mnnCorrected.tsv",
+                          h=TRUE, sep="\t", stringsAsFactors=FALSE)
+rownames(all.correct) <- all.correct$gene_id
 
-gse81076.correct <- read.table("../Pancreas/results/C_CELLseq_GSE81076.txt",
-                               h=T, stringsAsFactors=F)
-
-gse81076.raw <- read.table("../ftp2.cruk.cam.ac.uk/CELseq/GSE81076-norm.tsv.gz", sep="\t",
+gse81076.raw <- read.table("../Pancreas/Data/GSE81076_SFnorm.tsv", sep="\t",
                            h=T, stringsAsFactors=F)
 
-gse85241.correct <- read.table("../Pancreas/results/C_CELLseq_SSE85241.txt",
-                               h=T, stringsAsFactors=F)
-
-gse85241.raw <- read.table("../ftp2.cruk.cam.ac.uk/CELseq/GSE85241-norm.tsv.gz", sep="\t",
+gse85241.raw <- read.table("../Pancreas/Data/GSE85241_SFnorm.tsv", sep="\t",
                            h=T, stringsAsFactors=F)
 
-emtab5061.correct <- read.table("../Pancreas/results/C_Smartseq_EMATB5061.txt",
-                               h=T, stringsAsFactors=F)
-
-emtab5061.raw <- read.table("../ftp2.cruk.cam.ac.uk/Smartseq2/E-MTAB-5061-norm.tsv.gz", sep="\t",
+emtab5061.raw <- read.table("../Pancreas/Data/E-MTAB-5061_SFnorm.tsv", sep="\t",
                            h=T, stringsAsFactors=F)
 
-gse86473.correct <- read.table("../Pancreas/results/C_Smartseq_GSE86473.txt",
+gse86473.raw <- read.table("../Pancreas/Data/GSE86473_SFnorm.tsv", sep="\t",
                                h=T, stringsAsFactors=F)
 
-gse86473.raw <- read.table("../ftp2.cruk.cam.ac.uk/Smartseq2/GSE86473-norm.tsv.gz", sep="\t",
-                               h=T, stringsAsFactors=F)
-
-
-all.genes <- unique(c(rownames(gse81076.correct), rownames(gse85241.correct), rownames(emtab5061.correct), rownames(gse86473.correct)))
+all.genes <- unique(all.correct$gene_id)
 
 ensembl <- useEnsembl(biomart='ENSEMBL_MART_ENSEMBL', dataset='hsapiens_gene_ensembl', GRCh=37)
 
@@ -159,29 +150,29 @@ We also need to retrieve the meta data and highly variable genes, which are down
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE}
 # meta data
-gse81076.meta <- read.table("ftp2.cruk.cam.ac.uk/CELseq/GSE81076_marker_metadata.tsv", sep="\t",
+gse81076.meta <- read.table("../Pancreas/Data/GSE81076_marker_metadata.tsv", sep="\t",
+                            stringsAsFactors=F, h=TRUE)
+
+gse85241.meta <- read.table("../Pancreas/Data/GSE85241_marker_metadata.tsv", sep="\t",
                             stringsAsFactors=F, h=T)
 
-gse85241.meta <- read.table("ftp2.cruk.cam.ac.uk/CELseq/GSE85241_marker_metadata.tsv", sep="\t",
+emtab5061.meta <- read.table("../Pancreas/Data/E-MTAB-5061_metadata.tsv", sep="\t",
+                            stringsAsFactors=F, h=T)
+emtab5061.meta$Study <- "EMTAB5061"
+
+gse86473.meta <- read.table("../Pancreas/Data/GSE86473_metadata.tsv", sep="\t",
                             stringsAsFactors=F, h=T)
 
-emtab5061.meta <- read.table("ftp2.cruk.cam.ac.uk/Smartseq2/E-MTAB-5061_marker_metadata.tsv", sep="\t",
-                            stringsAsFactors=F, h=T)
-
-gse86473.meta <- read.table("ftp2.cruk.cam.ac.uk/Smartseq2/GSE86473_marker_metadata.tsv", sep="\t",
-                            stringsAsFactors=F, h=T)
-gse86473.meta$Study <- "GSE86473"
-
-gse86473.hvg <- read.table("ftp2.cruk.cam.ac.uk/Smartseq2/GSE86473-HVG.tsv", h=F, sep="\t",
+gse86473.hvg <- read.table("../Pancreas/Data/GSE86473-HVG.tsv", h=F, sep="\t",
                            stringsAsFactors=F)
 
-gse81076.hvg <- read.table("ftp2.cruk.cam.ac.uk/CELseq/GSE81076-HVG.tsv", h=F, sep="\t",
+gse81076.hvg <- read.table("../Pancreas/Data/GSE81076-HVG.tsv", h=F, sep="\t",
                            stringsAsFactors=F)
 
-emtab5061.hvg <- read.table("ftp2.cruk.cam.ac.uk/Smartseq2//E-MTAB-5061-HVG.tsv", h=F, sep="\t",
+emtab5061.hvg <- read.table("../Pancreas/Data/E-MTAB-5061-HVG.tsv", h=F, sep="\t",
                            stringsAsFactors=F)
 
-gse85241.hvg <- read.table("ftp2.cruk.cam.ac.uk/CELseq//GSE85241-HVG.tsv", h=F, sep="\t",
+gse85241.hvg <- read.table("../Pancreas/Data/GSE85241-HVG.tsv", h=F, sep="\t",
                            stringsAsFactors=F)
 ```
 
@@ -189,25 +180,6 @@ gse85241.hvg <- read.table("ftp2.cruk.cam.ac.uk/CELseq//GSE85241-HVG.tsv", h=F, 
 The comparison of the two smallest cell populations would be in gse81076, between the delta islets and the PP cells.  We want to naively cluster the cells together and find the cells that relate to say, PP and delta cells based on marker genes, etc.  This would essentially reflect the sort of work-flow that would be performed when the cell type labels are not known _a priori_.  Then using the same cells on the uncorrected data, we want to show that we can find more DE genes after correction, clustering, etc.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE}
-gse81076.correct$gene_id <- rownames(gse81076.correct)
-
-gse85241.correct$gene_id <- rownames(gse85241.correct)
-
-gse86473.correct$gene_id <- rownames(gse86473.correct)
-
-emtab5061.correct$gene_id <- rownames(emtab5061.correct)
-
-set.seed(42)
-merge.list <- list("GSE81076"=gse81076.correct,
-                   "GSE85241"=gse85241.correct,
-                   "EMTAB5061"=emtab5061.correct,
-                   "GSE86473"=gse86473.correct)
-
-merged.correct <- Reduce(f=function(x, y) merge(x, y, by='gene_id'),
-                         x=merge.list)
-rownames(merged.correct) <- merged.correct$gene_id
-merged.correct <- merged.correct[, 2:dim(merged.correct)[2]]
-
 merged.meta <- data.frame(do.call(rbind, list("GSE81076"=gse81076.meta[, c("Sample", "Study", "CellType")],
                                               "GSE85241"=gse85241.meta[, c("Sample", "Study", "CellType")],
                                               "EMTAB5061"=emtab5061.meta[, c("Sample", "Study", "CellType")],
@@ -217,17 +189,7 @@ merged.meta$CellType <- gsub(tolower(merged.meta$CellType), pattern=" cell", rep
 table(merged.meta$CellType)
 ```
 
-### Cell clustering
-
-```{r, echo=TRUE, warning=FALSE, message=FALSE}
-# use the original set of HVG
-union.hvg <- unique(c(unlist(gse86473.hvg), unlist(gse81076.hvg), unlist(emtab5061.hvg), unlist(gse85241.hvg)))
-all.hvg <- rownames(merged.correct) %in% union.hvg
-names(all.hvg) <- rownames(merged.correct)
-
-table(all.hvg)
-```
-
+## Cell clustering
 We now want to cluster cells and try to find their cell label(s), before doing a DE analysis on those cells (using the original uncorrected expression values).
 
 ### Clustering using MNN corrected data 
@@ -238,7 +200,7 @@ inc.types <- c("pp", "alpha", "beta", "acinar", "delta", "ductal", "mesenchyme",
 inc.cells <- merged.meta$Sample[merged.meta$CellType %in% inc.types]
 
 # cluster cells on the hvg
-all.cells <- merged.correct[all.hvg, intersect(inc.cells, colnames(merged.correct))]
+all.cells <- all.correct[, intersect(inc.cells, colnames(all.correct))]
 all.cells[is.na(all.cells)] <- 0
 all.cells <- all.cells[, intersect(colnames(all.cells), merged.meta$Sample)]
 merged.meta <- merged.meta[merged.meta$Sample %in% intersect(colnames(all.cells), merged.meta$Sample), ]
@@ -253,12 +215,10 @@ gse85241.cells <- merged.meta$Sample[merged.meta$Study == "GSE85241"]
 
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE}
-# use the euclidean distances to then perform tSNE on
-# NB: this is a slow operation as there are ~4000 cells to compute distances for
+# NB: this is a slow operation as there are ~7000 cells to embed
 set.seed(42)
-all.dist <- dist(t(all.cells), method='euclidean')
-all.tsne <- tsne_wrapper(all.dist, perplexity=50, is.dist=TRUE)
-
+all.tsne <- tsne_wrapper(all.cells, perplexity=50)
+all.tsne$Sample <- colnames(all.cells)
 all.merge <- merge(all.tsne, merged.meta, by='Sample')
 ```
 
@@ -343,29 +303,29 @@ plot_grid(sst.p, ppy.p, prss1.p, krt19.p, ins.p, gcg.p, col1a1.p,
 
 Based on the expression of these marker genes we can surmise that:
 
-* cluster 1 - Delta cells (SST+)
-* cluster 2, 3, & 8 - Beta cells (INS+)
-* cluster 4 - Alpha cells (GCG+)
-* cluster 5 - Acinar cells (GCG+)
+* cluster 3 - Delta cells (SST+)
+* cluster 7 - Beta cells (INS+)
+* cluster 1, 4 & 5 - Alpha cells (GCG+)
+* cluster 2 - Acinar cells (GCG+)
 * cluster 6 - PP/Gamma cells (PPY+)
-* cluster 7 - Ductal cells (KRT19+)
-* cluster 7 - Mesenchyme/PSC cells (COL1A1+)
+* cluster 8 - Ductal cells (KRT19+)
+* cluster 3 - Mesenchyme/PSC cells (COL1A1+)
 
-cluster 7 are mix of ductal cells and mesenchyme/PSC cells, but they are delineated by the expression of _COL1A1_ and _KRT19_ as can be seen in the plots above with the marker gene expression overlaid on the tSNE plots.  Therefore with a combination of clustering and marker genes following dataset combination and batch correction, we can re-find the original cell labels.
+Cluster 3 are mix of delta cells and mesenchyme/PSC cells, but they are delineated by the expression of _COL1A1_ and _KRT19_ as can be seen in the plots above with the marker gene expression overlaid on the tSNE plots.  Therefore with a combination of clustering and marker genes following dataset combination and batch correction, we can re-find the original cell labels.
 
 Let's define them explicitly:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE}
 meta.marker$new.labels <- "Unk"
-meta.marker$new.labels[meta.marker$Kmeans == 1 & meta.marker$SST >= 6] <- "Delta"
-meta.marker$new.labels[meta.marker$Kmeans == 2 & meta.marker$INS >= 4] <- "Beta"
-meta.marker$new.labels[meta.marker$Kmeans == 3 & meta.marker$INS >= 4] <- "Beta"
-meta.marker$new.labels[meta.marker$Kmeans == 8 & meta.marker$INS > 4] <- "Beta"
-meta.marker$new.labels[meta.marker$Kmeans == 4 & meta.marker$GCG >= 4] <- "Alpha"
-meta.marker$new.labels[meta.marker$Kmeans == 5 & meta.marker$PRSS1 >= 4] <- "Acinar"
-meta.marker$new.labels[meta.marker$Kmeans == 6 & meta.marker$PPY > 5] <- "Gamma"
-meta.marker$new.labels[meta.marker$Kmeans == 7 & meta.marker$KRT19 >= 4] <- "Ductal"
-meta.marker$new.labels[meta.marker$Kmeans == 7 & meta.marker$COL1A1 >= 4] <- "Mesenchyme"
+meta.marker$new.labels[meta.marker$Kmeans == 3 & meta.marker$SST >= 0.1] <- "Delta"
+meta.marker$new.labels[meta.marker$Kmeans == 7] <- "Beta"
+meta.marker$new.labels[meta.marker$Kmeans == 1] <- "Alpha"
+meta.marker$new.labels[meta.marker$Kmeans == 4] <- "Alpha"
+meta.marker$new.labels[meta.marker$Kmeans == 5] <- "Alpha"
+meta.marker$new.labels[meta.marker$Kmeans == 8] <- "Acinar"
+meta.marker$new.labels[meta.marker$Kmeans == 6] <- "Gamma"
+meta.marker$new.labels[meta.marker$Kmeans == 2] <- "Ductal"
+meta.marker$new.labels[meta.marker$Kmeans == 3 & meta.marker$COL1A1 >= 0.1] <- "Mesenchyme"
 
 table(meta.marker$CellType, meta.marker$new.labels)
 print(randIndex(table(meta.marker$CellType, meta.marker$new.labels), adjust=TRUE))
@@ -376,7 +336,7 @@ The gamma and pp cells are the same, but different studies use different labels.
 Below is the equivalent to Supplementary Figure4a in the manuscript.
 
 ```{r, fig.width=5, fig.height=7.5}
-new.tsne <- plot_grid(by.study, by.label, nrow=2, labels=c("a", ""))
+new.tsne <- plot_grid(by.study, by.cell, nrow=2, labels=c("a", "b"))
 
 new.tsne
 ```
@@ -403,7 +363,6 @@ Firstly we use the uncorrected data from GSE81076 to compare PP/$\gamma$ and $\d
 ```{r, echo=TRUE, warning=FALSE, message=FALSE}
 # select the same raw genes that are in the corrected data
 # use the old cell labels from GSE81076
-
 meta.marker$new.labels <- factor(meta.marker$new.labels,
                                 labels=c("Unk", "Gamma", "Beta", "Alpha", "Acinar", "Ductal", "Mesenchyme", "Delta"),
                                 levels=c("Unk", "Gamma", "Beta", "Alpha", "Acinar", "Ductal", "Mesenchyme", "Delta"))
@@ -443,7 +402,7 @@ raw.sum.res <- summary(limma::decideTests(raw.fit))
 knitr::kable(raw.sum.res)
 ```
 
-There are just 6 genes differentially expressed between $\delta$ and PP/$\gamma$ islet cells.  Let's check the identity of these 6 genes; they should at the very least include the two marker genes _SST_ and _PPY_.
+There are just 14 genes differentially expressed between $\delta$ and PP/$\gamma$ islet cells.  Let's check the identity of these 14 genes; they should at the very least include the two marker genes _SST_ and _PPY_.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE}
 raw.de.res <- limma::topTable(raw.fit, n=Inf, sort="p", p=1.0)
@@ -467,7 +426,7 @@ ma <- ggplot(raw.de.merge, aes(x=AveExpr, y=logFC, colour=Sig)) +
   scale_colour_Publication() +
   labs(x=expression(paste("Mean log"[2], " Expression")),
        y=expression(paste("log"[2], " Fold Change")),
-       title="GSE85241 Delta vs. PP cells") +
+       title="GSE81076 Delta vs. PP cells") +
   guides('colour'=guide_legend(title="Statistically significant")) +
   geom_text_repel(aes(label=raw.gene.top),
                   colour='black')
@@ -483,6 +442,164 @@ As expected the two most DE genes are _PPY_ (marker gene for PP cells) and _SST_
 
 Now let's look at what happens when we use the corrected data for all 4 data sets.
 
+### GSE85241 DE analysis
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+# select the same raw genes that are in the corrected data
+# use the newly defined cell labels
+
+meta.marker$new.labels <- factor(meta.marker$new.labels,
+                                labels=c("Unk", "Gamma", "Beta", "Alpha", "Acinar", "Ductal", "Mesenchyme", "Delta"),
+                                levels=c("Unk", "Gamma", "Beta", "Alpha", "Acinar", "Ductal", "Mesenchyme", "Delta"))
+
+raw.meta <- meta.marker[meta.marker$Sample %in% gse85241.cells, ]
+raw.meta$CellType <- factor(raw.meta$CellType,
+                            labels=c("Ductal", "Alpha", "Delta", "Beta", "Acinar", "PP", "Mesenchyme"),
+                            levels=c("ductal", "alpha", "delta", "beta", "acinar", "pp", "mesenchyme"))
+
+# set column cell ordering and meta data ordering the same
+rownames(raw.meta) <- raw.meta$Sample
+
+raw.design <- model.matrix(~ 0 + CellType, data=raw.meta)
+# raw.design <- model.matrix(~ 0 + new.labels, data=raw.meta)
+
+rownames(gse85241.raw) <- gse85241.raw$gene_id
+raw.exprs <- gse85241.raw[gse85241.raw$gene_id %in% all.genes, ]
+raw.exprs <- raw.exprs[, colnames(gse85241.raw) %in% gse85241.cells]
+raw.exprs <- raw.exprs[,colnames(raw.exprs)!="gene_id"]
+raw.exprs2 <- raw.exprs[, rownames(raw.meta)]
+
+colnames(raw.design) <- levels(raw.meta$CellType)
+# colnames(raw.design) <- c("Unk", "PP", "Beta", "Alpha", "Acinar", "Ductal", "Mesenchyme", "Delta")
+
+# fit a linear model
+raw.fit <- limma::lmFit(as.matrix(raw.exprs2),
+                        raw.design)
+
+
+contrast.mat <-  limma::makeContrasts(contrasts="Delta-PP",
+                                      levels=raw.design)
+
+raw.fit <- limma::contrasts.fit(raw.fit, contrasts=contrast.mat)
+raw.fit <- limma::treat(raw.fit, lfc=1)
+raw.sum.res <- summary(limma::decideTests(raw.fit))
+
+knitr::kable(raw.sum.res)
+```
+
+There are 42 genes DE in the GSE85241 study.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+gse85241.raw.de.res <- limma::topTable(raw.fit, n=Inf, sort="p", p=1.0)
+gse85241.raw.de.res$Sig <- 0
+gse85241.raw.de.res$Sig[gse85241.raw.de.res$adj.P.Val <= 0.05] <- 1
+gse85241.raw.de.res$Sig <- as.factor(gse85241.raw.de.res$Sig)
+
+gse85241.raw.de.res$Diff <- 0
+gse85241.raw.de.res$Diff[gse85241.raw.de.res$logFC < 0 & gse85241.raw.de.res$Sig == 1] <- -1
+gse85241.raw.de.res$Diff[gse85241.raw.de.res$logFC > 0 & gse85241.raw.de.res$Sig == 1] <- 1
+
+gse85241.raw.de.res$gene_id <- rownames(gse85241.raw.de.res)
+gse85241.raw.de.merge <- merge(gse85241.raw.de.res,  gene_symbol,
+                  by.x='gene_id', by.y='external_gene_name', all.x=TRUE)
+gse85241.raw.gene.top <- gse85241.raw.de.merge$gene_id
+gse85241.raw.gene.top[gse85241.raw.de.merge$logFC > -5 & gse85241.raw.de.merge$logFC < 5] <- ""
+gse85241.raw.gene.top[is.na(gse85241.raw.gene.top)] <- ""
+
+gse85241.ma <- ggplot(gse85241.raw.de.merge, aes(x=AveExpr, y=logFC, colour=Sig)) +
+  geom_point(size=1, alpha=0.8) + theme_mike() +
+  scale_colour_Publication() +
+  labs(x=expression(paste("Mean log"[2], " Expression")),
+       y=expression(paste("log"[2], " Fold Change")),
+       title="GSE85241 Delta vs. PP cells") +
+  guides('colour'=guide_legend(title="Statistically significant")) +
+  geom_text_repel(aes(label=gse85241.raw.gene.top),
+                  colour='black')
+
+gse85241.ma
+```
+
+### GSE86473 DE analysis
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+# select the same raw genes that are in the corrected data
+# use the newly defined cell labels
+
+meta.marker$new.labels <- factor(meta.marker$new.labels,
+                                labels=c("Unk", "Gamma", "Beta", "Alpha", "Acinar", "Ductal", "Mesenchyme", "Delta"),
+                                levels=c("Unk", "Gamma", "Beta", "Alpha", "Acinar", "Ductal", "Mesenchyme", "Delta"))
+
+raw.meta <- meta.marker[meta.marker$Sample %in% gse86473.cells, ]
+raw.meta$CellType <- factor(raw.meta$CellType,
+                            labels=c("Ductal", "Alpha", "Delta", "Beta", "Acinar", "PP", "Mesenchyme"),
+                            levels=c("ductal", "alpha", "delta", "beta", "acinar", "pp", "mesenchyme"))
+
+# set column cell ordering and meta data ordering the same
+rownames(raw.meta) <- raw.meta$Sample
+
+raw.design <- model.matrix(~ 0 + CellType, data=raw.meta)
+# raw.design <- model.matrix(~ 0 + new.labels, data=raw.meta)
+
+rownames(gse86473.raw) <- gse86473.raw$gene_id
+raw.exprs <- gse86473.raw[gse86473.raw$gene_id %in% all.genes, ]
+raw.exprs <- raw.exprs[, colnames(gse86473.raw) %in% gse86473.cells]
+raw.exprs <- raw.exprs[,colnames(raw.exprs)!="gene_id"]
+raw.exprs2 <- raw.exprs[, rownames(raw.meta)]
+
+colnames(raw.design) <- levels(raw.meta$CellType)
+# colnames(raw.design) <- c("Unk", "PP", "Beta", "Alpha", "Acinar", "Ductal", "Mesenchyme", "Delta")
+
+# fit a linear model
+raw.fit <- limma::lmFit(as.matrix(raw.exprs2),
+                        raw.design)
+
+
+contrast.mat <-  limma::makeContrasts(contrasts="Delta-PP",
+                                      levels=raw.design)
+
+raw.fit <- limma::contrasts.fit(raw.fit, contrasts=contrast.mat)
+raw.fit <- limma::treat(raw.fit, lfc=1)
+raw.sum.res <- summary(limma::decideTests(raw.fit))
+
+knitr::kable(raw.sum.res)
+```
+
+There are 59 DE genes in the GSE86473 study between $\delta$-islets and PP cells.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+gse86473.raw.de.res <- limma::topTable(raw.fit, n=Inf, sort="p", p=1.0)
+gse86473.raw.de.res$Sig <- 0
+gse86473.raw.de.res$Sig[gse86473.raw.de.res$adj.P.Val <= 0.05] <- 1
+gse86473.raw.de.res$Sig <- as.factor(gse86473.raw.de.res$Sig)
+
+gse86473.raw.de.res$Diff <- 0
+gse86473.raw.de.res$Diff[gse86473.raw.de.res$logFC < 0 & gse86473.raw.de.res$Sig == 1] <- -1
+gse86473.raw.de.res$Diff[gse86473.raw.de.res$logFC > 0 & gse86473.raw.de.res$Sig == 1] <- 1
+
+gse86473.raw.de.res$gene_id <- rownames(gse86473.raw.de.res)
+gse86473.raw.de.merge <- merge(gse86473.raw.de.res,  gene_symbol,
+                  by.x='gene_id', by.y='external_gene_name', all.x=TRUE)
+gse86473.raw.gene.top <- gse86473.raw.de.merge$gene_id
+gse86473.raw.gene.top[gse86473.raw.de.merge$logFC > -5 & gse86473.raw.de.merge$logFC < 5] <- ""
+gse86473.raw.gene.top[is.na(gse86473.raw.gene.top)] <- ""
+
+gse86473.ma <- ggplot(gse86473.raw.de.merge, aes(x=AveExpr, y=logFC, colour=Sig)) +
+  geom_point(size=1, alpha=0.8) + theme_mike() +
+  scale_colour_Publication() +
+  labs(x=expression(paste("Mean log"[2], " Expression")),
+       y=expression(paste("log"[2], " Fold Change")),
+       title="GSE86473 Delta vs. PP cells") +
+  guides('colour'=guide_legend(title="Statistically significant")) +
+  geom_text_repel(aes(label=gse86473.raw.gene.top),
+                  colour='black')
+
+gse86473.ma
+```
+
+### E-MTAB-5061 DE analysis
+
+This data set does not contain any PP/Gamma cells.
+
 ## DE analysis on combined data - Delta vs. PP/Gamma cells
 
 ```{r, echo=TRUE}
@@ -495,9 +612,7 @@ The comparison is now 416 vs. 409 cells, there should be many more DE genes.
 # select the same raw genes that are in the corrected data
 # need to use the raw values, and block on batch
 
-correct.genes <- rownames(merged.correct)
-gse86473.raw$gene_id <- gse86473.raw$hgnc_symbol
-emtab5061.raw$gene_id <- emtab5061.raw$hgnc_symbol
+correct.genes <- rownames(all.correct)
 
 # explicitly select the same cells that are subsampled from the corrected data
 rownames(gse86473.raw) <- gse86473.raw$gene_id
@@ -558,7 +673,7 @@ correct.sum.res <- summary(limma::decideTests(correct.fit2))
 knitr::kable(correct.sum.res)
 ```
 
-Immediately we can see that there are more genes detected as differentially expressed between PP and delta islet cells with log$_2$ fold change > 2 now; 72 in total.
+Immediately we can see that there are more genes detected as differentially expressed between PP and delta islet cells with log$_2$ fold change > 2 now; 74 in total.
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 # remember that the expression values are now L2 norms. Not log expression.
@@ -609,6 +724,10 @@ raw.volcano <- ggplot(raw.de.merge, aes(x=logFC, y=-log10(adj.P.Val))) +
   ylim(c(0, 150)) + xlim(c(-12, 12)) +
   geom_hline(mapping=aes(yintercept=-log(0.01)), linetype='dashed', colour='purple')
 
+ggsave(raw.volcano,
+       filename="../PancreasDE/GSE81076_volcano.png",
+       height=4.75, width=4.25, dpi=300)
+
 correct.volcano <- ggplot(correct.de.merge, aes(x=logFC, y=-log10(adj.P.Val))) +
   geom_point(alpha=0.5) + theme_mike() + 
   labs(x=expression(paste("log"[2], " Fold Change")),
@@ -618,32 +737,87 @@ correct.volcano <- ggplot(correct.de.merge, aes(x=logFC, y=-log10(adj.P.Val))) +
   ylim(c(0, 350)) + xlim(c(-12, 12)) +
   geom_hline(mapping=aes(yintercept=-log(0.01)), linetype='dashed', colour='purple')
 
+ggsave(correct.volcano,
+       filename="../PancreasDE/Corrected_volcano.png",
+       height=4.75, width=4.25, dpi=300)
+
 volcano.grid <- plot_grid(raw.volcano, correct.volcano)
 volcano.grid
 ```
 
 What about genes that are only DE in the total data set, and not in each individual one?  The raw DE genes should be a subset of the MNN corrected and combined DE genes.
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=6.5, fig.height=4}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=7.75, fig.height=4.75}
 raw.de.genes <- raw.de.merge$ensembl_gene_id[raw.de.merge$Sig == 1]
 correct.de.genes <- correct.de.merge$ensembl_gene_id[correct.de.merge$Sig == 1]
+gse81076.false <- setdiff(raw.de.genes, correct.de.genes)
 
 grid.newpage()
 vn.de <- draw.pairwise.venn(area1=length(raw.de.genes), area2=length(correct.de.genes),
                             cross.area=length(intersect(raw.de.genes, correct.de.genes)),
-                            category=c("Raw DE\ngenes", "MNN DE\ngenes"), lwd=c(2, 2),
+                            category=c("GSE81076 DE\ngenes", "MNN DE\ngenes"), lwd=c(2, 2),
                             col=c("#fdb462", "#a6cee3"), fill=c("#fdb462", "#a6cee3"),
-                            alpha=c(0.3, 0.3), cat.pos=c(230, 130), cat.dist=c(0.04, 0.05),
+                            alpha=c(0.3, 0.3), cat.pos=c(220, 130), cat.dist=c(0.1, 0.1),
+                            cat.cex=c(2, 2), cex=c(1.5, 1.5, 1.5),
                             euler.d=TRUE, scaled=TRUE, margin=(0.1), ext.text=FALSE)
 grid.draw(vn.de)
+
+png("../PancreasDE/GSE81076_Venn.png",
+    height=7.75, width=7.75, res=300, units="in")
+grid.draw(vn.de)
+dev.off()
+```
+Thus we can see that by appropriately combining data sets and correcting for batch effects between them we can construct new cell labels that improves our power to detect differentially expressed genes.  There are 2 genes identified (_GCG_ and _CRYBA2_), which might be indicative of either cell-contamination from $\beta$-islets in GSE81076, or a false-positive result.
+
+Let's look at the overlaps for each individual study with the overall combined DE genes.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=7.75, fig.height=4.75}
+indiv.de.genes <- gene_symbol$ensembl_gene_id[gene_symbol$external_gene_name %in% rownames(gse85241.raw.de.res[gse85241.raw.de.res$Sig == 1, ])]
+gse85241.false <- setdiff(indiv.de.genes, correct.de.genes)
+
+grid.newpage()
+vn.de.sep <- draw.pairwise.venn(area1=length(indiv.de.genes), area2=length(correct.de.genes),
+                            cross.area=length(intersect(indiv.de.genes, correct.de.genes)),
+                            category=c("GSE85241 DE\ngenes", "MNN DE\ngenes"), lwd=c(2, 2),
+                            col=c("#fdb462", "#a6cee3"), fill=c("#fdb462", "#a6cee3"),
+                            alpha=c(0.3, 0.3), cat.pos=c(220, 130), cat.dist=c(0.1, 0.1),
+                            cat.cex=c(2, 2), cex=c(1.5, 1.5, 1.5),
+                            euler.d=TRUE, scaled=TRUE, margin=(0.1), ext.text=FALSE)
+grid.draw(vn.de.sep)
+
+png("../PancreasDE/GSE85241_Venn.png",
+    height=7.75, width=7.75, res=300, units="in")
+grid.draw(vn.de.sep)
+dev.off()
 ```
 
-Thus we can see that by appropriately combining data sets and correcting for batch effects between them we can construct new cell labels that improves our power to detect differentially expressed genes.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.width=7.75, fig.height=4.75}
+indiv.de.genes <- gene_symbol$ensembl_gene_id[gene_symbol$external_gene_name %in% rownames(gse86473.raw.de.res[gse86473.raw.de.res$Sig == 1, ])]
+gse86473.false <- setdiff(indiv.de.genes, correct.de.genes)
+
+grid.newpage()
+vn.de.sep <- draw.pairwise.venn(area1=length(indiv.de.genes), area2=length(correct.de.genes),
+                            cross.area=length(intersect(indiv.de.genes, correct.de.genes)),
+                            category=c("GSE86473 DE\ngenes", "MNN DE\ngenes"), lwd=c(2, 2),
+                            col=c("#fdb462", "#a6cee3"), fill=c("#fdb462", "#a6cee3"),
+                            alpha=c(0.3, 0.3), cat.pos=c(220, 130), cat.dist=c(0.1, 0.1),
+                            cat.cex=c(2, 2), cex=c(1.5, 1.5, 1.5),
+                            euler.d=TRUE, scaled=TRUE, margin=(0.1), ext.text=FALSE)
+grid.draw(vn.de.sep)
+
+png("../PancreasDE/GSE86473_Venn.png",
+    height=7.75, width=7.75, res=300, units="in")
+grid.draw(vn.de.sep)
+dev.off()
+```
+
+For all 3 studies individually there are 2-14 genes that do not appear in the DE set based on the batch corrected cluster labels.  None of these genes overlap with each other, potentially giving a rough idea of the false positive rate within each individual study DE analysis.
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 # write out a list of the corrected DE genes
 write.table(correct.de.genes,
-            file="PancreasDE/PancreasDE_analysis_files/Corrected_DE_genes.tsv",
-            h=F, sep="\t", quote=F, row.names=F)
+            file="../PancreasDE/Corrected_DE_genes.tsv",
+            sep="\t", quote=F, row.names=F)
 ```
 
