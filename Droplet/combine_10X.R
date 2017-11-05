@@ -53,6 +53,20 @@ colnames(pbmc.batch) <- paste("pbmc", colnames(pbmc.batch), sep=".")
 dim(tcell.batch)[1] == dim(pbmc.batch)[1]
 
 all(rownames(tcell.batch) == rownames(pbmc.batch))
+
+# tSNE on the raw uncorrected data first
+tcell.batch$gene_id <- rownames(tcell.batch)
+pbmc.batch$gene_id <- rownames(pbmc.batch)
+
+merge.batch <- merge(tcell.batch, pbmc.batch, by='gene_id')
+uncorrect.tsne <- tsne_wrapper(merge.batch[, 2:dim(merge.batch)[2]])
+
+
+
+# remove the gene_id column before correction, etc
+tcell.batch <- tcell.batch[, 1:(dim(tcell.batch)[2]-1)]
+pbmc.batch <- pbmc.batch[, 1:(dim(pbmc.batch)[2]-1)]
+
 correct.data <- mnnCorrect(as.matrix(pbmc.batch),
                            as.matrix(tcell.batch),
                            k=20, subset.row=select.hvg)
