@@ -89,7 +89,7 @@ dev.off()
 
 ### MNN batch correction
 #inquiry_genes<-row.names(datah4)
-mnn.out<-mnnCorrect2(datah4,datah3,datah2,datah1,k=20, sigma=0.1, cos.norm="inside_and_output",svd.dim=0,varCare = TRUE)#,withQC = FALSE)
+mnn.out<-mnnCorrect(datah4,datah3,datah2,datah1,k=20, sigma=0.1, cos.norm="inside_and_output",svd.dim=0,varCare = TRUE)#,withQC = FALSE)
 
 X.mnn<-do.call(cbind, mnn.out$corrected)
 t.mnn <- t(X.mnn)
@@ -278,7 +278,7 @@ dev.off()
 ########compare local vs. global
 #local effects is as calculated above mnn.out
 ##calculate global eefects i.e large sigma i.e. equal weight averaging
-mnn.out.g<-mnnCorrect2(datah4,datah3,datah2,datah1,k=20, sigma=10, cos.norm="inside_and_output",svd.dim=0,varCare = TRUE)#,withQC = FALSE)
+mnn.out.g<-mnnCorrect(datah4,datah3,datah2,datah1,k=20, sigma=10, cos.norm="inside_and_output",svd.dim=0,varCare = TRUE)#,withQC = FALSE)
 
 X.mnn.g<-do.call(cbind, mnn.out.g$corrected)
 t.mnn.g <- t(X.mnn.g)
@@ -331,7 +331,7 @@ entropy.cg<-BatchEntropy(pca.mnn.g$x[,1:2],batch)
 
 entropies.locglob<-cbind(entropy.mnn,entropy.cg)
 
-png(file="results/entropy_batches_pcaspace.png",width=900,height=700) #sils_alltypes_fullspace.png
+png(file="results/entropy_localgloba_pcaspace.png",width=900,height=700) #sils_alltypes_fullspace.png
 par(mfrow=c(1,1),mar=c(8,8,5,3),cex.axis=3,cex.main=2,cex.lab=3)
 boxplot(entropies.locglob,main="",names=c("Local","Global"),lwd=4,ylab="Batch mixing entropy")#,col="Yellow",ylab="Alpha dists")
 dev.off()
