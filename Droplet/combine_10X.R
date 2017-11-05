@@ -54,14 +54,59 @@ dim(tcell.batch)[1] == dim(pbmc.batch)[1]
 
 all(rownames(tcell.batch) == rownames(pbmc.batch))
 
+# save these for later
+tcell.cells <- colnames(tcell.batch)
+pbmc.cells <- colnames(pbmc.batch)
+
+batch.meta <- do.call(rbind.data.frame, list("Tcell"=tcell.meta,
+                                             "PBMC"=pbmc.meta))
+
 # tSNE on the raw uncorrected data first
 tcell.batch$gene_id <- rownames(tcell.batch)
 pbmc.batch$gene_id <- rownames(pbmc.batch)
 
 merge.batch <- merge(tcell.batch, pbmc.batch, by='gene_id')
 uncorrect.tsne <- tsne_wrapper(merge.batch[, 2:dim(merge.batch)[2]])
+uncorrect.tsne$Study <- ""
+uncorrect.tsne$Study[uncorrect.tsne$Sample %in% tcell.cells] <- "Tcells"
+uncorrect.tsne$Study[uncorrect.tsne$Sample %in% pbmc.cells] <- "PBMC"
 
+uncorrect.tsne.merge <- merge(uncorrect.tsne, batch.meta, by='Sample')
 
+label_cols <- c("#386cb0", "#fdb462",
+                "#7fc97f","#ef3b2c","#662506",
+                "#a6cee3","#fb9a99","#984ea3",
+                "#ffff33", "#b2df8a")
+names(label_cols) <- unique(uncorrect.tsne.merge$CellType)
+
+batch.cols <- c("#33a02c", "#cab2d6")
+names(batch.cols) <- unique(uncorrect.tsne.merge$Study)
+
+unc.by_study <- ggplot(uncorrect.tsne.merge,
+       aes(x=Dim1, y=Dim2, fill=Study)) +
+  geom_point(size=3, shape=21) + theme_classic() +
+  labs(x="tSNE Dimension 1", y="tSNE Dimension 2") +
+  guides(colour=guide_legend(title='Batch', nrow=3)) +
+  scale_fill_manual(values=batch.cols) +
+  theme(axis.title=element_text(size=20, colour='black'),
+        axis.text=element_text(size=16, colour='black'))
+
+ggsave(unc.by_study,
+       filename="Droplet/Uncorrected_by_study.png",
+       height=4.75, width=6.75, dpi=300)
+
+unc.by_cell <- ggplot(uncorrect.tsne.merge,
+                       aes(x=Dim1, y=Dim2, fill=CellType)) +
+  geom_point(size=3, shape=21) + theme_classic() +
+  labs(x="tSNE Dimension 1", y="tSNE Dimension 2") +
+  guides(colour=guide_legend(title='Batch', nrow=3)) +
+  scale_fill_manual(values=label_cols) +
+  theme(axis.title=element_text(size=20, colour='black'),
+        axis.text=element_text(size=16, colour='black'))
+
+ggsave(unc.by_cell,
+       filename="Droplet/Uncorrected_by_celltype.png",
+       height=4.75, width=6.75, dpi=300)
 
 # remove the gene_id column before correction, etc
 tcell.batch <- tcell.batch[, 1:(dim(tcell.batch)[2]-1)]
@@ -87,22 +132,11 @@ set.seed(42)
 correct.tsne <- tsne_wrapper(correct.df[, 2:dim(correct.df)[2]])
 
 # get study info and other meta data
-tcell.cells <- colnames(tcell.batch)
-pbmc.cells <- colnames(pbmc.batch)
-
 correct.tsne$Study <- ""
 correct.tsne$Study[correct.tsne$Sample %in% tcell.cells] <- "Tcells"
 correct.tsne$Study[correct.tsne$Sample %in% pbmc.cells] <- "PBMC"
 
-batch.meta <- do.call(rbind.data.frame, list("Tcell"=tcell.meta,
-                                             "PBMC"=pbmc.meta))
 tsne.merge <- merge(correct.tsne, batch.meta, by='Sample')
-
-label_cols <- c("#386cb0", "#fdb462",
-                "#7fc97f","#ef3b2c","#662506",
-                "#a6cee3","#fb9a99","#984ea3",
-                "#ffff33", "#b2df8a")
-names(label_cols) <- unique(tsne.merge$CellType)
 
 # looks pretty good!  Not bad for only 306 genes!!!
 by.label <- ggplot(tsne.merge, aes(x=Dim1, y=Dim2, fill=CellType)) +
@@ -132,8 +166,6 @@ colnames(correct.clusters) <- c("Sample", "Community")
 correct.clusters$Community <- as.factor(correct.clusters$Community)
 correct.max <- merge(tsne.merge, correct.clusters, by='Sample')
 
-batch.cols <- c("#33a02c", "#cab2d6")
-names(batch.cols) <- unique(correct.max$Study)
 
 comm.tsne <- ggplot(correct.max,
                     aes(x=Dim1, y=Dim2, fill=Study)) + 
