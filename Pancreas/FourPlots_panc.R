@@ -259,7 +259,7 @@ names(batch.cols) <- unique(all.meta$Study)
 # perform tSNE on uncorrected data using HVGs
 uncorrected <- as.matrix(t(raw.hvg[rownames(raw.hvg) %in% common.hvgs, ]))
 set.seed(0)
-tsne.unc <- Rtsne(uncorrected, distance=FALSE, perplexity=100)
+tsne.unc <- Rtsne(uncorrected, distance=FALSE, perplexity=30)
 
 # input and output order are the same
 unc.tsne <- data.frame(tsne.unc$Y)
