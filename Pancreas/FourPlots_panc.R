@@ -478,11 +478,15 @@ celltype2 <- all.meta$CellType[all.meta$Study == "GSE85241"]
 celltype3 <- all.meta$CellType[all.meta$Study == "GSE86473"]
 celltype4 <- all.meta$CellType[all.meta$Study == "EMTAB5061"]
 
+# this is a vector of highly genes that intersect the commonly expressed genes.
+all.hvg <- unique(c(HVG1, HVG2, HVG3, HVG4))
+hvg_genes <- intersect(common.genes, all.hvg)
+
 # serialize objects to an RDS file
 save(raw.all, corrected.df, lm.mat, combat.mat,
      datah1, datah2, datah3, datah4,
      celltype1, celltype2, celltype3, celltype4,
      HVG1, HVG2, HVG3, HVG4,
-     common.hvgs,
+     common.hvgs, hvg_genes,
      all.meta, interact.cols,
      file="Pancreas/Data/ObjectsForPlotting.RDS")
