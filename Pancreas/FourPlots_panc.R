@@ -4,7 +4,6 @@
 require(WGCNA)
 require(Rtsne)
 library(scales)
-library(scran)
 library(ggplot2)
 library(cowplot)
 library(RColorBrewer)
@@ -299,18 +298,21 @@ unc.bybatch <- ggplot(unc.merge, aes(x=Dim1, y=Dim2,
 ggsave(unc.bybatch,
        filename="Pancreas/Uncorrected_by_batch_pancreas-tSNE.png",
        height=5.75, width=9.3035, dpi=300)
+
 ##########################################################################
 ##########################################################################
 ## MNN batch correction
+# source the devel version of mnnCorrect for the purposes of the ms
+# source("SomeFuncs/devel_mnnCorrect.R")
 hvg.common <- common.hvgs[common.hvgs %in% common.genes]
 Xmnn <- mnnCorrect(as.matrix(r.datah1[, 1:(dim(r.datah1)[2]-1)]),
                    as.matrix(r.datah2[, 1:(dim(r.datah2)[2]-1)]),
                    as.matrix(r.datah3[, 1:(dim(r.datah3)[2]-1)]),
                    as.matrix(r.datah4[, 1:(dim(r.datah4)[2]-1)]),
-                   subset.row=hvg.common, 
-                   svd.dim=NA,
+                   hvg.genes=hvg.common, 
+                   svd.dim=FALSE,
                    k=20, sigma=0.1,
-                   cos.norm=TRUE)
+                   cos.norm="inside_and_output")
 
 # combine corrected matrices together
 corrected.df <- do.call(cbind.data.frame, Xmnn$corrected)
@@ -320,7 +322,7 @@ colnames(corrected.df) <- c(colnames(r.datah1[, 1:(dim(r.datah1)[2]-1)]), colnam
                             colnames(r.datah3[, 1:(dim(r.datah3)[2]-1)]), colnames(r.datah4[, 1:(dim(r.datah4)[2]-1)]))
 
 set.seed(0)
-tsne.c <- Rtsne(corrected.mat, is_distance=FALSE, perplexity=100)
+tsne.c <- Rtsne(corrected.mat, is_distance=FALSE, perplexity=30)
 
 # input and output order are the same
 mnn.tsne <- data.frame(tsne.c$Y)
@@ -373,7 +375,7 @@ Xlm <- removeBatchEffect(raw.hvg, batch.vector)
 lm.mat <- as.matrix(t(Xlm))
 
 set.seed(0)
-tsne.lm <- Rtsne(lm.mat, is_distance=FALSE, perplexity = 100)
+tsne.lm <- Rtsne(lm.mat, is_distance=FALSE, perplexity = 30)
 
 # input and output order are the same
 lm.tsne <- data.frame(tsne.lm$Y)
@@ -421,7 +423,7 @@ cleandat.combat <- ComBat(raw.hvg, all.meta$Study,
 combat.mat <- as.matrix(t(cleandat.combat))
 
 set.seed(0)
-tsne.combat <- Rtsne(combat.mat, is_distance=FALSE, perplexity=100)
+tsne.combat <- Rtsne(combat.mat, is_distance=FALSE, perplexity=30)
 
 # input and output order are the same
 combat.tsne <- data.frame(tsne.combat$Y)
@@ -460,48 +462,14 @@ combat.bybatch <- ggplot(combat.merge, aes(x=Dim1, y=Dim2,
 ggsave(combat.bybatch,
        filename="Pancreas/ComBat_by_batch_pancreas-tSNE.png",
        height=5.75, width=9.3035, dpi=300)
+
 ##########################################################################
 ##########################################################################
 # write out a single file for all of the corrected data and a 
 # file for the combined meta data
-corrected.df$gene_id <- common.hvgs
+corrected.df$gene_id <- common.genes
 write.table(corrected.df, file="Pancreas/Data/mnnCorrected.tsv",
             row.names=FALSE, sep="\t", quote=FALSE)
-
-# ##########################################################################
-# ##########################################################################
-# ## compute Silhouette coefficients on t-SNE coordinates
-# # this should only be used on individual cell types, not all cell types together
-# require(cluster)
-# ct.fac <- factor(all.meta$CellType)
-# # only calculate silhouette on alpha cells.
-# 
-# dd.unc <- as.matrix(dist(uncorrected))
-# score_sil <- silhouette(as.numeric(ct.fac), dd.unc)
-# # alpha islets are in cluster 2
-# sil_unc <- score_sil[score_sil[, 1] == 2, 3]  #for uncorrected data
-# 
-# dd.c <- as.matrix(dist(corrected.mat))
-# score_sil <- silhouette(as.numeric(ct.fac), dd.c)
-# sil_c <- score_sil[score_sil[, 1] == 2, 3] #for MNN corrected data
-# 
-# dd.lm <- as.matrix(dist(lm.mat))
-# score_sil <- silhouette(as.numeric(ct.fac), dd.lm)
-# sil_lm <- score_sil[score_sil[, 1] == 2, 3] #for limma corrected data
-# 
-# dd.com <- as.matrix(dist(tsne.combat$Y))
-# score_sil <- silhouette(as.numeric(ct.fac), dd.com)
-# sil_com <- score_sil[score_sil[, 1] == 2, 3] #for ComBat corrected data
-# 
-# ### boxplot of Silhouette coefficients
-# sils <- cbind(sil_unc, sil_c, sil_lm, sil_com)
-# 
-# png(file="sils_alphaIslet_tsnespace.png", width=900, height=700)
-# par(mfrow=c(1, 1), mar=c(4, 6, 2, 2), cex.axis=1.5, cex.main=2, cex.lab=2)
-# boxplot(sils, main="", names=c("Raw", "MNN", "limma", "ComBat"),
-#         ylim=c(-0.4, 0.4),
-# 	      lwd=2, ylab="Silhouette coefficient")#, col="Yellow", ylab="Alpha dists")
-# dev.off()
 
 ##################
 # output a few objects for use in other scripts for supplementary figures
@@ -512,8 +480,9 @@ celltype4 <- all.meta$CellType[all.meta$Study == "EMTAB5061"]
 
 # serialize objects to an RDS file
 save(raw.all, corrected.df, lm.mat, combat.mat,
-     r.datah1, r.datah2, r.datah3, r.datah4,
+     datah1, datah2, datah3, datah4,
      celltype1, celltype2, celltype3, celltype4,
+     HVG1, HVG2, HVG3, HVG4,
      common.hvgs,
      all.meta, interact.cols,
      file="Pancreas/Data/ObjectsForPlotting.RDS")
