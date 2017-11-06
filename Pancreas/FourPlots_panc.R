@@ -468,45 +468,52 @@ corrected.df$gene_id <- common.hvgs
 write.table(corrected.df, file="Pancreas/Data/mnnCorrected.tsv",
             row.names=FALSE, sep="\t", quote=FALSE)
 
-##########################################################################
-##########################################################################
-## compute Silhouette coefficients on t-SNE coordinates
-# this should only be used on individual cell types, not all cell types together
-require(cluster)
-ct.fac <- factor(all.meta$CellType)
-# only calculate silhouette on alpha cells.
-
-dd.unc <- as.matrix(dist(uncorrected))
-score_sil <- silhouette(as.numeric(ct.fac), dd.unc)
-# alpha islets are in cluster 2
-sil_unc <- score_sil[score_sil[, 1] == 2, 3]  #for uncorrected data
-
-dd.c <- as.matrix(dist(corrected.mat))
-score_sil <- silhouette(as.numeric(ct.fac), dd.c)
-sil_c <- score_sil[score_sil[, 1] == 2, 3] #for MNN corrected data
-
-dd.lm <- as.matrix(dist(lm.mat))
-score_sil <- silhouette(as.numeric(ct.fac), dd.lm)
-sil_lm <- score_sil[score_sil[, 1] == 2, 3] #for limma corrected data
-
-dd.com <- as.matrix(dist(tsne.combat$Y))
-score_sil <- silhouette(as.numeric(ct.fac), dd.com)
-sil_com <- score_sil[score_sil[, 1] == 2, 3] #for ComBat corrected data
-
-### boxplot of Silhouette coefficients
-sils <- cbind(sil_unc, sil_c, sil_lm, sil_com)
-
-png(file="sils_alphaIslet_tsnespace.png", width=900, height=700)
-par(mfrow=c(1, 1), mar=c(4, 6, 2, 2), cex.axis=1.5, cex.main=2, cex.lab=2)
-boxplot(sils, main="", names=c("Raw", "MNN", "limma", "ComBat"),
-        ylim=c(-0.4, 0.4),
-	      lwd=2, ylab="Silhouette coefficient")#, col="Yellow", ylab="Alpha dists")
-dev.off()
+# ##########################################################################
+# ##########################################################################
+# ## compute Silhouette coefficients on t-SNE coordinates
+# # this should only be used on individual cell types, not all cell types together
+# require(cluster)
+# ct.fac <- factor(all.meta$CellType)
+# # only calculate silhouette on alpha cells.
+# 
+# dd.unc <- as.matrix(dist(uncorrected))
+# score_sil <- silhouette(as.numeric(ct.fac), dd.unc)
+# # alpha islets are in cluster 2
+# sil_unc <- score_sil[score_sil[, 1] == 2, 3]  #for uncorrected data
+# 
+# dd.c <- as.matrix(dist(corrected.mat))
+# score_sil <- silhouette(as.numeric(ct.fac), dd.c)
+# sil_c <- score_sil[score_sil[, 1] == 2, 3] #for MNN corrected data
+# 
+# dd.lm <- as.matrix(dist(lm.mat))
+# score_sil <- silhouette(as.numeric(ct.fac), dd.lm)
+# sil_lm <- score_sil[score_sil[, 1] == 2, 3] #for limma corrected data
+# 
+# dd.com <- as.matrix(dist(tsne.combat$Y))
+# score_sil <- silhouette(as.numeric(ct.fac), dd.com)
+# sil_com <- score_sil[score_sil[, 1] == 2, 3] #for ComBat corrected data
+# 
+# ### boxplot of Silhouette coefficients
+# sils <- cbind(sil_unc, sil_c, sil_lm, sil_com)
+# 
+# png(file="sils_alphaIslet_tsnespace.png", width=900, height=700)
+# par(mfrow=c(1, 1), mar=c(4, 6, 2, 2), cex.axis=1.5, cex.main=2, cex.lab=2)
+# boxplot(sils, main="", names=c("Raw", "MNN", "limma", "ComBat"),
+#         ylim=c(-0.4, 0.4),
+# 	      lwd=2, ylab="Silhouette coefficient")#, col="Yellow", ylab="Alpha dists")
+# dev.off()
 
 ##################
+# output a few objects for use in other scripts for supplementary figures
+celltype1 <- all.meta$CellType[all.meta$Study == "GSE81076"]
+celltype2 <- all.meta$CellType[all.meta$Study == "GSE85241"]
+celltype3 <- all.meta$CellType[all.meta$Study == "GSE86473"]
+celltype4 <- all.meta$CellType[all.meta$Study == "EMTAB5061"]
 
 # serialize objects to an RDS file
 save(raw.all, corrected.df, lm.mat, combat.mat,
+     r.datah1, r.datah2, r.datah3, r.datah4,
+     celltype1, celltype2, celltype3, celltype4,
      common.hvgs,
      all.meta, interact.cols,
      file="Pancreas/Data/ObjectsForPlotting.RDS")
