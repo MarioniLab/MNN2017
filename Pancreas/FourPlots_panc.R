@@ -303,7 +303,7 @@ ggsave(unc.bybatch,
 ##########################################################################
 ## MNN batch correction
 # source the devel version of mnnCorrect for the purposes of the ms
-# source("SomeFuncs/devel_mnnCorrect.R")
+source("SomeFuncs/devel_mnnCorrect.R")
 hvg.common <- common.hvgs[common.hvgs %in% common.genes]
 Xmnn <- mnnCorrect(as.matrix(r.datah1[, 1:(dim(r.datah1)[2]-1)]),
                    as.matrix(r.datah2[, 1:(dim(r.datah2)[2]-1)]),
@@ -473,10 +473,12 @@ write.table(corrected.df, file="Pancreas/Data/mnnCorrected.tsv",
 
 ##################
 # output a few objects for use in other scripts for supplementary figures
-celltype1 <- all.meta$CellType[all.meta$Study == "GSE81076"]
-celltype2 <- all.meta$CellType[all.meta$Study == "GSE85241"]
-celltype3 <- all.meta$CellType[all.meta$Study == "GSE86473"]
-celltype4 <- all.meta$CellType[all.meta$Study == "EMTAB5061"]
+rownames(all.meta) <- all.meta$Sample
+
+celltype1 <- all.meta[colnames(datah1), ]$CellType
+celltype2 <- all.meta[colnames(datah2), ]$CellType
+celltype3 <- all.meta[colnames(datah3), ]$CellType
+celltype4 <- all.meta[colnames(datah4), ]$CellType
 
 # this is a vector of highly genes that intersect the commonly expressed genes.
 all.hvg <- unique(c(HVG1, HVG2, HVG3, HVG4))
