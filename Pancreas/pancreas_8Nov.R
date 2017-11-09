@@ -37,6 +37,8 @@ batch.cols<-colors4[batch]
 set.seed(0)
 ix2<-sample(ncol(raw.all)) # randomize index for fair representation plots
 
+dir.create("results", showWarning=FALSE)
+
 #### Uncorrected data 
 t.unc<-t(raw.all)
 all.dists2.unc <- as.matrix(dist(t.unc))
