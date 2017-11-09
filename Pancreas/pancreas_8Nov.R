@@ -5,7 +5,6 @@ setwd(this.dir)
 load("./ObjectsForPlotting.RDS") #load the output of "preparedata.R"
 rm(list=setdiff(ls(), c("datah1","datah2","datah3","datah4","hvg_genes","celltype1","celltype2","celltype3","celltype4")) )
 
-stop()
 require(WGCNA)
 library(scales)
 library(scran)
@@ -72,6 +71,26 @@ mnn.out<-mnnCorrect(datah3,datah4,datah2,datah1,k=20, sigma=0.1, cos.norm="insid
 X.mnn<-do.call(cbind, mnn.out$corrected)
 t.mnn <- t(X.mnn)
 
+
+##################### write.table MNN corrected data
+corrected3<-mnn.out$corrected[[1]]
+corrected4<-mnn.out$corrected[[2]]
+corrected2<-mnn.out$corrected[[3]]
+corrected1<-mnn.out$corrected[[4]]
+
+ colnames(corrected3)<-celltype3
+ colnames(corrected4)<-celltype4
+ colnames(corrected2)<-celltype2
+ colnames(corrected1)<-celltype1
+
+dir.create("CorrectedData", showWarning=FALSE)
+
+ write.table(file="CorrectedData/C_Smartseq_GSE86473.txt",corrected3,row.names = TRUE, col.names = TRUE)
+ write.table(file="CorrectedData/C_Smartseq_EMATB5061.txt",corrected4,row.names = TRUE, col.names = TRUE)
+ write.table(file="CorrectedData/C_CELLseq_SSE85241.txt",corrected2,row.names = TRUE, col.names = TRUE)
+ write.table(file="CorrectedData/C_CELLseq_GSE81076.txt",corrected1,row.names = TRUE, col.names = TRUE)
+
+####
 png(file="results/angles.png",width=1000,height=300)
 par(mfrow=c(1,3),mar=c(6,6,4,2),cex.axis=2,cex.main=3,cex.lab=2.5)
 hist(mnn.out$ang.with.ref[[2]],xlab="Angle",ylab="Frequency",main="") 
@@ -117,6 +136,7 @@ png(file="results/mnn_batch_conven.png",width=900,height=700)
 par(mfrow=c(1,1),mar=c(6,6,4,2),cex.axis=2,cex.main=3,cex.lab=2.5)
 plot(tsne.c2$Y[ix2,1],tsne.c2$Y[ix2,2], pch=20,cex=2,col=alpha(batch.cols[ix2],0.6),main="MNN",xlab="tSNE 1",ylab="tSNE 2")
 dev.off()
+
 
 ###limma batch correction
 library(limma)
@@ -185,27 +205,7 @@ forleg<-table(celltypes,allcolors)
 leg.txt<-unique(celltypes)
 legend("bottomright", "(x,y)", legend = leg.txt, col =unique(allcolors) , pch = 20,cex = 2.5,bty = "n",lwd = 3,lty=0)   #, trace = TRUE)
 dev.off()
-##################### write.table
-# Ns<-c(ncol(datah4),ncol(datah3),ncol(datah2),ncol(datah1))
-# correh4<-corre[,1:Ns[1]]
-# correh3<-corre[,(Ns[1]+1):(Ns[1]+Ns[2])]
-# correh2<-corre[,(Ns[1]+Ns[2]+1):(Ns[1]+Ns[2]+Ns[3])]
-# correh1<-corre[,(Ns[1]+Ns[2]+Ns[3]+1):(Ns[1]+Ns[2]+Ns[3]+Ns[4])]
 
-# colnames(correh4)<-celltype4
-# colnames(correh3)<-celltype3
-# colnames(correh2)<-celltype2
-# colnames(correh1)<-celltype1
-
-# colnames(correh4)<-colnames(datah4)
-# colnames(correh3)<-colnames(datah3)
-# colnames(correh2)<-colnames(datah2)
-# colnames(correh1)<-colnames(datah1)
-# 
-# write.table(file="C_Smartseq_GSE86473.txt",correh4,row.names = TRUE, col.names = TRUE)
-# write.table(file="C_Smartseq_EMATB5061.txt",correh3,row.names = TRUE, col.names = TRUE)
-# write.table(file="C_CELLseq_SSE85241.txt",correh2,row.names = TRUE, col.names = TRUE)
-# write.table(file="C_CELLseq_GSE81076.txt",correh1,row.names = TRUE, col.names = TRUE)
 ##########
 
 ##########compute Silhouette coefficients on t-SNE coordinates
