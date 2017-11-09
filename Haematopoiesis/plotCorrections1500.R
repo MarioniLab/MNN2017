@@ -21,7 +21,7 @@ first.batch <- rep(c(TRUE, FALSE), c(ncol(logDataF3), ncol(logDataA3)))
 
 # Adding colours.
 #base.color <- "grey"
-color.legendF <- c(MEP="gold", GMP="chartreuse4", CMP="magenta", 
+color.legendF <- c(MEP="orange", GMP="chartreuse4", CMP="magenta", 
                    HSPC="cyan", LTHSC="dodgerblue", MPP="blue", LMPP="light blue", Unsorted="grey")
 colmatF <- col2rgb(color.legendF) 
 
