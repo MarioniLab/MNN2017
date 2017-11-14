@@ -1,5 +1,6 @@
 # L shaped data simulations (supplement figures)
 #of non-orthogonal batch effect + small angle rotation
+library(scran)
 
 cx=0
 cy=0
@@ -33,7 +34,7 @@ L2 <- rbind(hor,ver)+shift
 
 points(L2)
 
-Xmnn<-mnnCorrect(t(L1),t(L2),k=10, sigma=0.1, cos.norm=FALSE,svd.dim=0,k.clara = 0,withQC = FALSE,varCare=TRUE)
+Xmnn<-mnnCorrect(t(L1),t(L2),k=10, sigma=0.1, cos.norm.in=FALSE, cos.norm.out=FALSE,var.adj=TRUE, compute.angle=FALSE)
 corre<-t(do.call(cbind,Xmnn$corrected))
 
 par(mfrow=c(1,2),mar=c(6,6,4,2),cex.axis=1,cex.main=1,cex.lab=1)
@@ -49,7 +50,8 @@ rotM[2,]=c(sin(theta),cos(theta))
 
 L2r=t(rotM%*% t(L1))
 colnames(L2r)<-colnames(L2)
-Xmnn<-mnnCorrect(t(L1),t(L2r),k=10, sigma=0.1, cos.norm=FALSE,svd.dim=0,k.clara = 0,withQC = FALSE,varCare=TRUE)
+Xmnn<-mnnCorrect(t(L1),t(L2r),k=10, sigma=0.1, cos.norm.in=FALSE, cos.norm.out=FALSE, var.adj=TRUE,compute.angle=FALSE)
+
 corre<-t(do.call(cbind,Xmnn$corrected))
 
 par(mfrow=c(1,2),mar=c(6,6,4,2),cex.axis=1,cex.main=1,cex.lab=1)
