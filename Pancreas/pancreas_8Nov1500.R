@@ -8,6 +8,7 @@ rm(list=setdiff(ls(), c("datah1","datah2","datah3","datah4","hvg_genes","celltyp
 require(WGCNA)
 library(scales)
 library(scran)
+dir.create("results1500", showWarning=FALSE)
 
 hvg_genes<-sample(hvg_genes,1500)
 
@@ -66,17 +67,16 @@ plot(pca.unc$x[ix2,1],pca.unc$x[ix2,2], pch=20,cex=2,col=alpha(batch.cols[ix2],0
 dev.off()
 
 ### MNN batch correction
-#inquiry_genes<-row.names(datah4)
-mnn.out<-mnnCorrect(datah3,datah4,datah2,datah1,k=20, sigma=0.1, cos.norm="inside_and_output",svd.dim=0,varCare = TRUE)#,withQC = FALSE)
+mnn.out<-mnnCorrect(datah3,datah4,datah2,datah1,k=20, sigma=0.1,cos.norm.in=TRUE, cos.norm.out=TRUE, var.adj=TRUE,compute.angle=TRUE)
 
 X.mnn<-do.call(cbind, mnn.out$corrected)
 t.mnn <- t(X.mnn)
 
 png(file="results1500/angles.png",width=1000,height=300)
 par(mfrow=c(1,3),mar=c(6,6,4,2),cex.axis=2,cex.main=3,cex.lab=2.5)
-hist(mnn.out$ang.with.ref[[2]],xlab="Angle",ylab="Frequency",main="") 
-hist(mnn.out$ang.with.ref[[3]],xlab="Angle",ylab="Frequency",main="") 
-hist(mnn.out$ang.with.ref[[4]],xlab="Angle",ylab="Frequency",main="") 
+hist(mnn.out$angles[[2]],xlab="Angle",ylab="Frequency",main="") 
+hist(mnn.out$angles[[3]],xlab="Angle",ylab="Frequency",main="") 
+hist(mnn.out$angles[[4]],xlab="Angle",ylab="Frequency",main="") 
 dev.off()
 
 all.dists2.c <- as.matrix(dist(t.mnn))
@@ -256,7 +256,7 @@ dev.off()
 ########compare local vs. global
 #local effects is as calculated above mnn.out
 ##calculate global eefects i.e large sigma i.e. equal weight averaging
-mnn.out.g<-mnnCorrect(datah3,datah4,datah2,datah1,k=20, sigma=100, cos.norm="inside_and_output",svd.dim=0,varCare = TRUE)#,withQC = FALSE)
+mnn.out.g<-mnnCorrect(datah3,datah4,datah2,datah1,k=20, sigma=100,cos.norm.in=TRUE, cos.norm.out=TRUE, var.adj=TRUE,compute.angle=TRUE)
 
 X.mnn.g<-do.call(cbind, mnn.out.g$corrected)
 t.mnn.g <- t(X.mnn.g)
