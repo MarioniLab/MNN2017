@@ -93,14 +93,16 @@ gc()
 ######################## 
 # Performing the correction with MNN (turned down the sigma to improve mixing).
 
-mnn.out <- mnnCorrect2(logDataF3, logDataA3, k=20, sigma=0.1, cos.norm="inside_and_output", svd.dim=0)
+#mnn.out <- mnnCorrect2(logDataF3, logDataA3, k=20, sigma=0.1, cos.norm="inside_and_output", svd.dim=0)
+mnn.out<-mnnCorrect(logDataF3, logDataA3,k=20, sigma=0.1,cos.norm.in=TRUE, cos.norm.out=TRUE, var.adj=TRUE,compute.angle=TRUE)
+
 X.mnn <- cbind(mnn.out$corrected[[1]], mnn.out$corrected[[2]])
 t.mnn <- t(X.mnn)
 
 # plot histogram of angles between batch vectors and 2 svds of the reference batch.
 png(file="results1500/angles.png",width=900,height=700)
 par(mfrow=c(1,1),mar=c(6,6,4,2),cex.axis=2,cex.main=3,cex.lab=2.5)
-hist(unlist(mnn.out$ang.with.ref),xlab="Angle",ylab="Frequency",main="")
+hist(unlist(mnn.out$angles),xlab="Angle",ylab="Frequency",main="")
 dev.off()
 # Generating a t-SNE plot.
 set.seed(0)
@@ -125,6 +127,8 @@ plotFUN("results1500/pca_mnn.png", pca.mnn$x, subset=pca.retain, main="MNN", yli
 library(destiny)
 dm<-DiffusionMap(t.mnn,n_local = 150)
 plotFUN("results1500/mnnFAdm12.png", dm@eigenvectors[,1:2], main="MNN",  xlab="DC 1",ylab="DC 2")
+plotFUN("results1500/mnnFAdm23.png", cbind(dm@eigenvectors[,2],dm@eigenvectors[,3]), main="MNN",  xlab="DC 2",ylab="DC 3")
+plotFUN("results1500/mnnFAdm13.png", cbind(dm@eigenvectors[,1],dm@eigenvectors[,3]), main="MNN",  xlab="DC 1",ylab="DC 3")
 plotFUN("results1500/mnnFAdm24.png", cbind(dm@eigenvectors[,2],dm@eigenvectors[,4]), main="MNN",  xlab="DC 2",ylab="DC 4")
 
 rm(t.mnn)
