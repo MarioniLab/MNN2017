@@ -23,6 +23,9 @@ library(stringr)
 library(WGCNA)
 library(ggrepel)
 library(cowplot)
+library(scran)
+library(igraph)
+library(scales)
 
 # setup ggplot theme
 theme_mike <- function(base_size=14) {
@@ -120,10 +123,33 @@ First we'll load all of the raw and batch corrected data into the R environment.
 ```{r, echo=TRUE, warning=FALSE, message=FALSE}
 # all paths assume code is executed in the MNN2017 repository directory
 # change these as necessary
-# all corrected data are in a single file
-all.correct <- read.table("../Pancreas/Data/mnnCorrected.tsv",
-                          h=TRUE, sep="\t", stringsAsFactors=FALSE)
-rownames(all.correct) <- all.correct$gene_id
+# read in the objects from the pre-processing scripts.
+load("../Pancreas/Data/ObjectsForPlotting.RDS")
+
+gse81076.correct <- read.table("~/Dropbox/MNNfigures/CorrectedData/C_CELLseq_GSE81076.txt",
+                              h=T, stringsAsFactors=F)
+
+gse85241.correct <- read.table("~/Dropbox/MNNfigures/CorrectedData/C_CELLseq_SSE85241.txt",
+                           h=T, stringsAsFactors=F)
+
+emtab5061.correct <- read.table("~/Dropbox/MNNfigures/CorrectedData/C_Smartseq_EMATB5061.txt",
+                           h=T, stringsAsFactors=F)
+
+gse86473.correct <- read.table("~/Dropbox/MNNfigures/CorrectedData/C_Smartseq_GSE86473.txt",
+                               h=T, stringsAsFactors=F)
+
+# these are in the same order as the input matrices
+colnames(gse81076.correct) <- colnames(datah1)
+colnames(gse85241.correct) <- colnames(datah2)
+colnames(emtab5061.correct) <- colnames(datah4)
+colnames(gse86473.correct) <- colnames(datah3)
+
+all.correct <- do.call(cbind.data.frame, list("GSE81076"=gse81076.correct,
+                                              "GSE85241"=gse85241.correct,
+                                              "EMTAB5061"=emtab5061.correct,
+                                              "GSE86473"=gse86473.correct))
+colnames(all.correct) <- unlist(lapply(strsplit(colnames(all.correct), fixed=T, split="."),
+                                       FUN=function(Q) paste(Q[2:length(Q)], collapse=".")))
 
 gse81076.raw <- read.table("../Pancreas/Data/GSE81076_SFnorm.tsv", sep="\t",
                            h=T, stringsAsFactors=F)
@@ -137,7 +163,7 @@ emtab5061.raw <- read.table("../Pancreas/Data/E-MTAB-5061_SFnorm.tsv", sep="\t",
 gse86473.raw <- read.table("../Pancreas/Data/GSE86473_SFnorm.tsv", sep="\t",
                                h=T, stringsAsFactors=F)
 
-all.genes <- unique(all.correct$gene_id)
+all.genes <- unique(c(gse81076.raw$gene_id, gse85241.raw$gene_id, emtab5061.raw$gene_id, gse86473.raw$gene_id))
 
 ensembl <- useEnsembl(biomart='ENSEMBL_MART_ENSEMBL', dataset='hsapiens_gene_ensembl', GRCh=37)
 
@@ -176,8 +202,7 @@ gse85241.hvg <- read.table("../Pancreas/Data/GSE85241-HVG.tsv", h=F, sep="\t",
                            stringsAsFactors=F)
 ```
 
-
-The comparison of the two smallest cell populations would be in gse81076, between the delta islets and the PP cells.  We want to naively cluster the cells together and find the cells that relate to say, PP and delta cells based on marker genes, etc.  This would essentially reflect the sort of work-flow that would be performed when the cell type labels are not known _a priori_.  Then using the same cells on the uncorrected data, we want to show that we can find more DE genes after correction, clustering, etc.
+The comparison of the two smallest cell populations would be in GSE81076, between the delta islets and the PP cells.  We want to naively cluster the cells together and find the cells that relate to say, PP and delta cells based on marker genes, etc.  This would essentially reflect the sort of work-flow that would be performed when the cell type labels are not known _a priori_.  Then using the same cells on the uncorrected data, we want to show that we can find more DE genes after correction, clustering, etc.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE}
 merged.meta <- data.frame(do.call(rbind, list("GSE81076"=gse81076.meta[, c("Sample", "Study", "CellType")],
@@ -185,6 +210,16 @@ merged.meta <- data.frame(do.call(rbind, list("GSE81076"=gse81076.meta[, c("Samp
                                               "EMTAB5061"=emtab5061.meta[, c("Sample", "Study", "CellType")],
                                               "GSE86473"=gse86473.meta[, c("Sample", "Study", "CellType")])))
 merged.meta$CellType <- gsub(tolower(merged.meta$CellType), pattern=" cell", replacement="")
+
+merged.meta$CellType[merged.meta$CellType == "acinar"] <- "Acinar"
+merged.meta$CellType[merged.meta$CellType == "alpha"] <- "Alpha"
+merged.meta$CellType[merged.meta$CellType == "beta"] <- "Beta"
+merged.meta$CellType[merged.meta$CellType == "delta"] <- "Delta"
+merged.meta$CellType[merged.meta$CellType == "ductal"] <- "Ductal"
+merged.meta$CellType[merged.meta$CellType == "gamma"] <- "Gamma"
+merged.meta$CellType[merged.meta$CellType == "pp"] <- "Gamma"
+merged.meta$CellType[!merged.meta$CellType %in% c("Acinar", "Alpha", "Beta", "Delta",
+                                                  "Ductal", "Gamma")] <- "Other"
 
 table(merged.meta$CellType)
 ```
@@ -195,15 +230,21 @@ We now want to cluster cells and try to find their cell label(s), before doing a
 ### Clustering using MNN corrected data 
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE}
-# remove the small scrappy cell types, there are at least 30 cells
-inc.types <- c("pp", "alpha", "beta", "acinar", "delta", "ductal", "mesenchyme", "psc", "gamma")
+# correct.meta <- do.call(cbind.data.frame, list("Study"=unlist(lapply(strsplit(colnames(all.correct), split=".", fixed=TRUE),
+#                                                                               FUN=function(X) paste0(X[1]))),
+#                                                "CellType"=unlist(lapply(strsplit(colnames(all.correct), split=".", fixed=TRUE),
+#                                                                               FUN=function(X) paste0(X[2]))),
+#                                                "Sample"=colnames(all.correct)))
+# correct.meta$Sample <- as.character(correct.meta$Sample)
+# # remove the small scrappy cell types, there are at least 30 cells
+inc.types <- c("PP", "Alpha", "Beta", "Acinar", "Delta", "Ductal", "Gamma")
+
 inc.cells <- merged.meta$Sample[merged.meta$CellType %in% inc.types]
 
 # cluster cells on the hvg
 all.cells <- all.correct[, intersect(inc.cells, colnames(all.correct))]
 all.cells[is.na(all.cells)] <- 0
-all.cells <- all.cells[, intersect(colnames(all.cells), merged.meta$Sample)]
-merged.meta <- merged.meta[merged.meta$Sample %in% intersect(colnames(all.cells), merged.meta$Sample), ]
+rownames(all.cells) <- hvg_genes
 rownames(merged.meta) <- merged.meta$Sample
 
 # get the cell IDs for each study
@@ -217,8 +258,7 @@ gse85241.cells <- merged.meta$Sample[merged.meta$Study == "GSE85241"]
 ```{r, echo=TRUE, warning=FALSE, message=FALSE}
 # NB: this is a slow operation as there are ~7000 cells to embed
 set.seed(42)
-all.tsne <- tsne_wrapper(all.cells, perplexity=50)
-all.tsne$Sample <- colnames(all.cells)
+all.tsne <- tsne_wrapper(dist(t(all.cells)), perplexity=30, is.dist=TRUE)
 all.merge <- merge(all.tsne, merged.meta, by='Sample')
 ```
 
@@ -226,11 +266,13 @@ all.merge <- merge(all.tsne, merged.meta, by='Sample')
 ```{r, echo=TRUE, warning=FALSE, message=FALSE}
 # try a k-means with k=8 as we expect ~8 different cell types across all 4 data sets
 set.seed(42)
-all.kmeans <- kmeans(all.tsne[, 1:2], centers=8)
-kmean.df <- data.frame(cbind(colnames(all.cells), all.kmeans$cluster))
-colnames(kmean.df) <- c("Sample", "Kmeans")
 
-kmean.merge <- merge(all.merge, kmean.df, by='Sample')
+all.snn <- buildSNNGraph(all.cells, k=30, d=30, pc.approx=TRUE)
+all.comm <- walktrap.community(all.snn, steps=5)
+all.clusters <- do.call(cbind.data.frame, list("Sample"=colnames(all.cells),
+                                               "Community"=all.comm$membership))
+
+kmean.merge <- merge(all.merge, all.clusters, by='Sample')
 ```
 
 Let's plot the tSNE, colour by the kmeans partition.  Please note that since the original manuscript submission minor alterations in the MNNCorrect code have resulted in qualitatively different plots.  The same partitioning is possible, but due to the stochastic nature of tSNE, small changes in values can propagate into apparently large differences in tSNE visualisation.
@@ -241,7 +283,7 @@ by.cell <- ggplot(kmean.merge, aes(x=Dim1, Dim2, colour=CellType)) +
   scale_colour_Publication() +
   labs(x="tSNE 1", y="tSNE 2")
 
-by.study <- ggplot(kmean.merge, aes(x=Dim1, Dim2, colour=Kmeans)) +
+by.study <- ggplot(kmean.merge, aes(x=Dim1, Dim2, colour=as.factor(Community))) +
   geom_point(size=1, alpha=0.6) + theme_mike() +
   scale_colour_Publication() +
   labs(x="tSNE 1", y="tSNE 2")
@@ -249,7 +291,7 @@ by.study <- ggplot(kmean.merge, aes(x=Dim1, Dim2, colour=Kmeans)) +
 plot_grid(by.cell, by.study)
 ```
 
-K-means on the tSNE dimensions does pretty well, it splits some of the larger clusters though, but it is obvious these should be merged into a single cluster.  Let's overlay the different marker genes from the original publications onto these cells to identify what types they are.
+Walktrap community detection algorithm on the SNN graph does pretty well, it splits some of the larger clusters though, but it is obvious these should be merged into a single cluster.  Let's overlay the different marker genes from the original publications onto these cells to identify what types they are.
 
 ```{r, echo=TRUE, message=FALSE, warning=FALSE, fig.width=9, fig.height=9}
 marker.genes <- c("SST", "PPY", "PRSS1", "KRT19", "INS", "GHRL", "GCG", "ESAM", "COL1A1")
@@ -303,13 +345,12 @@ plot_grid(sst.p, ppy.p, prss1.p, krt19.p, ins.p, gcg.p, col1a1.p,
 
 Based on the expression of these marker genes we can surmise that:
 
-* cluster 3 - Delta cells (SST+)
-* cluster 7 - Beta cells (INS+)
-* cluster 1, 4 & 5 - Alpha cells (GCG+)
-* cluster 2 - Acinar cells (GCG+)
-* cluster 6 - PP/Gamma cells (PPY+)
-* cluster 8 - Ductal cells (KRT19+)
-* cluster 3 - Mesenchyme/PSC cells (COL1A1+)
+* cluster 6 - Delta cells (SST+)
+* cluster 1, 9 - Beta cells (INS+)
+* cluster 3, 4, 8, 10 - Alpha cells (GCG+)
+* cluster 7 - Acinar cells (GCG+)
+* cluster 2, 11 - PP/Gamma cells (PPY+)
+* cluster 5 - Ductal cells (KRT19+)
 
 Cluster 3 are mix of delta cells and mesenchyme/PSC cells, but they are delineated by the expression of _COL1A1_ and _KRT19_ as can be seen in the plots above with the marker gene expression overlaid on the tSNE plots.  Therefore with a combination of clustering and marker genes following dataset combination and batch correction, we can re-find the original cell labels.
 
@@ -317,21 +358,18 @@ Let's define them explicitly:
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE}
 meta.marker$new.labels <- "Unk"
-meta.marker$new.labels[meta.marker$Kmeans == 3 & meta.marker$SST >= 0.1] <- "Delta"
-meta.marker$new.labels[meta.marker$Kmeans == 7] <- "Beta"
-meta.marker$new.labels[meta.marker$Kmeans == 1] <- "Alpha"
-meta.marker$new.labels[meta.marker$Kmeans == 4] <- "Alpha"
-meta.marker$new.labels[meta.marker$Kmeans == 5] <- "Alpha"
-meta.marker$new.labels[meta.marker$Kmeans == 8] <- "Acinar"
-meta.marker$new.labels[meta.marker$Kmeans == 6] <- "Gamma"
-meta.marker$new.labels[meta.marker$Kmeans == 2] <- "Ductal"
-meta.marker$new.labels[meta.marker$Kmeans == 3 & meta.marker$COL1A1 >= 0.1] <- "Mesenchyme"
+meta.marker$new.labels[meta.marker$Community == 6] <- "Delta"
+meta.marker$new.labels[meta.marker$Community %in% c(1, 9)] <- "Beta"
+meta.marker$new.labels[meta.marker$Community %in% c(3, 4, 8, 10)] <- "Alpha"
+meta.marker$new.labels[meta.marker$Community == 7] <- "Acinar"
+meta.marker$new.labels[meta.marker$Community %in% c(2, 11)] <- "Gamma"
+meta.marker$new.labels[meta.marker$Community == 5] <- "Ductal"
 
 table(meta.marker$CellType, meta.marker$new.labels)
 print(randIndex(table(meta.marker$CellType, meta.marker$new.labels), adjust=TRUE))
 ```
 
-The gamma and pp cells are the same, but different studies use different labels.  Here, as described in the manuscript, we consider them all to be of the same type, labelled `Gamma`.  We also merge together the mesenchyme and PSC cells as we cannot discriminate between them transcriptionally.  The adjusted Rand index, assuming the original cell type labels as the ground truth, is `r randIndex(table(meta.marker$CellType, meta.marker$new.labels), adjust=TRUE)`.
+Here, as described in the manuscript, we consider PP and $\gamma$ islets all to be of the same type, labelled `Gamma`.  The adjusted Rand index, assuming the original cell type labels as the ground truth, is `r randIndex(table(meta.marker$CellType, meta.marker$new.labels), adjust=TRUE)`.
 
 Below is the equivalent to Supplementary Figure4a in the manuscript.
 
@@ -364,13 +402,13 @@ Firstly we use the uncorrected data from GSE81076 to compare PP/$\gamma$ and $\d
 # select the same raw genes that are in the corrected data
 # use the old cell labels from GSE81076
 meta.marker$new.labels <- factor(meta.marker$new.labels,
-                                labels=c("Unk", "Gamma", "Beta", "Alpha", "Acinar", "Ductal", "Mesenchyme", "Delta"),
-                                levels=c("Unk", "Gamma", "Beta", "Alpha", "Acinar", "Ductal", "Mesenchyme", "Delta"))
+                                labels=c("Unk", "Gamma", "Beta", "Alpha", "Acinar", "Ductal", "Delta"),
+                                levels=c("Unk", "Gamma", "Beta", "Alpha", "Acinar", "Ductal", "Delta"))
 
 raw.meta <- meta.marker[meta.marker$Sample %in% gse81076.cells, ]
 raw.meta$CellType <- factor(raw.meta$CellType,
-                            labels=c("Ductal", "Alpha", "Delta", "Beta", "Acinar", "PP", "Mesenchyme"),
-                            levels=c("ductal", "alpha", "delta", "beta", "acinar", "pp", "mesenchyme"))
+                            labels=c("Ductal", "Alpha", "Delta", "Beta", "Acinar", "Gamma"),
+                            levels=c("Ductal", "Alpha", "Delta", "Beta", "Acinar", "Gamma"))
 
 # set column cell ordering and meta data ordering the same
 rownames(raw.meta) <- raw.meta$Sample
@@ -390,7 +428,7 @@ colnames(raw.design) <- levels(raw.meta$CellType)
 raw.fit <- limma::lmFit(as.matrix(raw.exprs2),
                         raw.design)
 
-contrast.mat <-  limma::makeContrasts(contrasts="Delta-PP",
+contrast.mat <-  limma::makeContrasts(contrasts="Delta-Gamma",
                                       levels=raw.design)
 
 raw.fit <- limma::contrasts.fit(raw.fit, contrasts=contrast.mat)
@@ -402,7 +440,7 @@ raw.sum.res <- summary(limma::decideTests(raw.fit))
 knitr::kable(raw.sum.res)
 ```
 
-There are just 14 genes differentially expressed between $\delta$ and PP/$\gamma$ islet cells.  Let's check the identity of these 14 genes; they should at the very least include the two marker genes _SST_ and _PPY_.
+There are just 12 genes differentially expressed between $\delta$ and PP/$\gamma$ islet cells.  Let's check the identity of these 14 genes; they should at the very least include the two marker genes _SST_ and _PPY_.
 
 ```{r, echo=TRUE, warning=FALSE, message=FALSE}
 raw.de.res <- limma::topTable(raw.fit, n=Inf, sort="p", p=1.0)
@@ -449,13 +487,13 @@ Now let's look at what happens when we use the corrected data for all 4 data set
 # use the newly defined cell labels
 
 meta.marker$new.labels <- factor(meta.marker$new.labels,
-                                labels=c("Unk", "Gamma", "Beta", "Alpha", "Acinar", "Ductal", "Mesenchyme", "Delta"),
-                                levels=c("Unk", "Gamma", "Beta", "Alpha", "Acinar", "Ductal", "Mesenchyme", "Delta"))
+                                labels=c("Unk", "Gamma", "Beta", "Alpha", "Acinar", "Ductal", "Delta"),
+                                levels=c("Unk", "Gamma", "Beta", "Alpha", "Acinar", "Ductal", "Delta"))
 
 raw.meta <- meta.marker[meta.marker$Sample %in% gse85241.cells, ]
 raw.meta$CellType <- factor(raw.meta$CellType,
-                            labels=c("Ductal", "Alpha", "Delta", "Beta", "Acinar", "PP", "Mesenchyme"),
-                            levels=c("ductal", "alpha", "delta", "beta", "acinar", "pp", "mesenchyme"))
+                            labels=c("Ductal", "Alpha", "Delta", "Beta", "Acinar", "Gamma"),
+                            levels=c("Ductal", "Alpha", "Delta", "Beta", "Acinar", "Gamma"))
 
 # set column cell ordering and meta data ordering the same
 rownames(raw.meta) <- raw.meta$Sample
@@ -477,7 +515,7 @@ raw.fit <- limma::lmFit(as.matrix(raw.exprs2),
                         raw.design)
 
 
-contrast.mat <-  limma::makeContrasts(contrasts="Delta-PP",
+contrast.mat <-  limma::makeContrasts(contrasts="Delta-Gamma",
                                       levels=raw.design)
 
 raw.fit <- limma::contrasts.fit(raw.fit, contrasts=contrast.mat)
@@ -526,13 +564,13 @@ gse85241.ma
 # use the newly defined cell labels
 
 meta.marker$new.labels <- factor(meta.marker$new.labels,
-                                labels=c("Unk", "Gamma", "Beta", "Alpha", "Acinar", "Ductal", "Mesenchyme", "Delta"),
-                                levels=c("Unk", "Gamma", "Beta", "Alpha", "Acinar", "Ductal", "Mesenchyme", "Delta"))
+                                labels=c("Unk", "Gamma", "Beta", "Alpha", "Acinar", "Ductal", "Delta"),
+                                levels=c("Unk", "Gamma", "Beta", "Alpha", "Acinar", "Ductal", "Delta"))
 
 raw.meta <- meta.marker[meta.marker$Sample %in% gse86473.cells, ]
 raw.meta$CellType <- factor(raw.meta$CellType,
-                            labels=c("Ductal", "Alpha", "Delta", "Beta", "Acinar", "PP", "Mesenchyme"),
-                            levels=c("ductal", "alpha", "delta", "beta", "acinar", "pp", "mesenchyme"))
+                            labels=c("Ductal", "Alpha", "Delta", "Beta", "Acinar", "Gamma"),
+                            levels=c("Ductal", "Alpha", "Delta", "Beta", "Acinar", "Gamma"))
 
 # set column cell ordering and meta data ordering the same
 rownames(raw.meta) <- raw.meta$Sample
@@ -554,7 +592,7 @@ raw.fit <- limma::lmFit(as.matrix(raw.exprs2),
                         raw.design)
 
 
-contrast.mat <-  limma::makeContrasts(contrasts="Delta-PP",
+contrast.mat <-  limma::makeContrasts(contrasts="Delta-Gamma",
                                       levels=raw.design)
 
 raw.fit <- limma::contrasts.fit(raw.fit, contrasts=contrast.mat)
@@ -564,7 +602,7 @@ raw.sum.res <- summary(limma::decideTests(raw.fit))
 knitr::kable(raw.sum.res)
 ```
 
-There are 59 DE genes in the GSE86473 study between $\delta$-islets and PP cells.
+There are 88 DE genes in the GSE86473 study between $\delta$-islets and $\gamma$ cells.
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 gse86473.raw.de.res <- limma::topTable(raw.fit, n=Inf, sort="p", p=1.0)
@@ -606,7 +644,7 @@ This data set does not contain any PP/Gamma cells.
 rowSums(table(meta.marker$new.labels, meta.marker$Study))
 ```
 
-The comparison is now 416 vs. 409 cells, there should be many more DE genes.
+The comparison is now 417 vs. 390 cells, there should be many more DE genes.
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 # select the same raw genes that are in the corrected data
@@ -673,7 +711,7 @@ correct.sum.res <- summary(limma::decideTests(correct.fit2))
 knitr::kable(correct.sum.res)
 ```
 
-Immediately we can see that there are more genes detected as differentially expressed between PP and delta islet cells with log$_2$ fold change > 2 now; 74 in total.
+Immediately we can see that there are more genes detected as differentially expressed between PP and delta islet cells with log$_2$ fold change > 2 now; 76 in total.
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 # remember that the expression values are now L2 norms. Not log expression.
@@ -721,7 +759,8 @@ raw.volcano <- ggplot(raw.de.merge, aes(x=logFC, y=-log10(adj.P.Val))) +
        y=expression(paste("-log"[10], " Adjusted p-value")))+
   geom_text_repel(aes(label=raw.gene.top),
                   colour='black') + 
-  ylim(c(0, 150)) + xlim(c(-12, 12)) +
+  xlim(c(-12, 12)) +
+  scale_y_continuous(limits=c(0, 100), oob=squish) +
   geom_hline(mapping=aes(yintercept=-log(0.01)), linetype='dashed', colour='purple')
 
 ggsave(raw.volcano,
@@ -734,7 +773,8 @@ correct.volcano <- ggplot(correct.de.merge, aes(x=logFC, y=-log10(adj.P.Val))) +
        y=expression(paste("-log"[10], " Adjusted p-value"))) +
   geom_text_repel(aes(label=correct.gene.top),
                   colour='black') + 
-  ylim(c(0, 350)) + xlim(c(-12, 12)) +
+  xlim(c(-12, 12)) +
+  scale_y_continuous(limits=c(0, 100), oob=squish) +
   geom_hline(mapping=aes(yintercept=-log(0.01)), linetype='dashed', colour='purple')
 
 ggsave(correct.volcano,
@@ -758,7 +798,9 @@ vn.de <- draw.pairwise.venn(area1=length(raw.de.genes), area2=length(correct.de.
                             category=c("GSE81076 DE\ngenes", "MNN DE\ngenes"), lwd=c(2, 2),
                             col=c("#fdb462", "#a6cee3"), fill=c("#fdb462", "#a6cee3"),
                             alpha=c(0.3, 0.3), cat.pos=c(220, 130), cat.dist=c(0.1, 0.1),
-                            cat.cex=c(2, 2), cex=c(1.5, 1.5, 1.5),
+                            cat.cex=c(2, 2), cex=c(2.75, 2.75, 2.75),
+                            fontfamily=c("Helvetica", "Helvetica", "Helvetica"),
+                            cat.fontfamily=c("Helvetica", "Helvetica"),
                             euler.d=TRUE, scaled=TRUE, margin=(0.1), ext.text=FALSE)
 grid.draw(vn.de)
 
@@ -781,7 +823,9 @@ vn.de.sep <- draw.pairwise.venn(area1=length(indiv.de.genes), area2=length(corre
                             category=c("GSE85241 DE\ngenes", "MNN DE\ngenes"), lwd=c(2, 2),
                             col=c("#fdb462", "#a6cee3"), fill=c("#fdb462", "#a6cee3"),
                             alpha=c(0.3, 0.3), cat.pos=c(220, 130), cat.dist=c(0.1, 0.1),
-                            cat.cex=c(2, 2), cex=c(1.5, 1.5, 1.5),
+                            cat.cex=c(2, 2), cex=c(2.75, 2.75, 2.75),
+                            fontfamily=c("Helvetica", "Helvetica", "Helvetica"),
+                            cat.fontfamily=c("Helvetica", "Helvetica"),
                             euler.d=TRUE, scaled=TRUE, margin=(0.1), ext.text=FALSE)
 grid.draw(vn.de.sep)
 
@@ -802,7 +846,9 @@ vn.de.sep <- draw.pairwise.venn(area1=length(indiv.de.genes), area2=length(corre
                             category=c("GSE86473 DE\ngenes", "MNN DE\ngenes"), lwd=c(2, 2),
                             col=c("#fdb462", "#a6cee3"), fill=c("#fdb462", "#a6cee3"),
                             alpha=c(0.3, 0.3), cat.pos=c(220, 130), cat.dist=c(0.1, 0.1),
-                            cat.cex=c(2, 2), cex=c(1.5, 1.5, 1.5),
+                            cat.cex=c(2, 2), cex=c(2.75, 2.75, 2.75),
+                            fontfamily=c("Helvetica", "Helvetica", "Helvetica"),
+                            cat.fontfamily=c("Helvetica", "Helvetica"),
                             euler.d=TRUE, scaled=TRUE, margin=(0.1), ext.text=FALSE)
 grid.draw(vn.de.sep)
 
@@ -812,7 +858,7 @@ grid.draw(vn.de.sep)
 dev.off()
 ```
 
-For all 3 studies individually there are 2-14 genes that do not appear in the DE set based on the batch corrected cluster labels.  None of these genes overlap with each other, potentially giving a rough idea of the false positive rate within each individual study DE analysis.
+For all 3 studies individually there are 1-34 genes that do not appear in the DE set based on the batch corrected cluster labels.  None of these genes overlap with each other, potentially giving a rough idea of the false positive rate within each individual study DE analysis.
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 # write out a list of the corrected DE genes
@@ -821,3 +867,12 @@ write.table(correct.de.genes,
             sep="\t", quote=F, row.names=F)
 ```
 
+
+To what extent do the study-specific DE genes overlap?
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+intersect(gse81076.false, intersect(gse85241.false, gse86473.false))
+
+```
+
+There is no overlap between these genes, which implies that they might be false positive DE genes.

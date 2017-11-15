@@ -1,6 +1,6 @@
 # Code for the t-SNE plots of pancreas data sets and the Silhouette coefficients before and after batch correction by different methods (main text Figure 4).
 # PLEASE SET THE WORKING DIRECTORY TO ./MNN2017/
-
+library(scran)
 require(WGCNA)
 require(Rtsne)
 library(scales)
@@ -207,6 +207,11 @@ gm_mean = function(x, na.rm=TRUE){
 # this still uses the intersection of all genes, if it doesn't
 # appear in the list of genes at all, set the pval - 1.
 all.genes <- unique(c(genes1, genes2, genes3, genes4))
+
+# this is a vector of highly genes that intersect the commonly expressed genes.
+all.hvg <- unique(c(HVG1, HVG2, HVG3, HVG4))
+hvg_genes <- intersect(common.genes, all.hvg)
+
 common.hvgs <- c()
 for(i in seq_along(common.genes)){
   g <- common.genes[i]
@@ -257,7 +262,7 @@ names(batch.cols) <- unique(all.meta$Study)
 ##########################################################################
 ## Uncorrected data 
 # perform tSNE on uncorrected data using HVGs
-uncorrected <- as.matrix(t(raw.hvg[rownames(raw.hvg) %in% common.hvgs, ]))
+uncorrected <- as.matrix(t(raw.hvg[rownames(raw.hvg) %in% hvg_genes, ]))
 set.seed(0)
 tsne.unc <- Rtsne(uncorrected, distance=FALSE, perplexity=30)
 
@@ -275,7 +280,7 @@ unc.bycell <- ggplot(unc.merge, aes(x=Dim1, y=Dim2,
   scale_fill_manual(values=interact.cols) +
   scale_y_continuous(limits=c(-50, 50)) +
   scale_x_continuous(limits=c(-50, 50)) +
-  labs(x="tSNE 1", y="tSNE 2", title="Uncorrected") +
+  labs(x="tSNE 1", y="tSNE 2") +
   guides(fill=FALSE) +
   theme(axis.title=element_text(size=24), axis.text=element_text(size=16))
 
@@ -291,7 +296,7 @@ unc.bybatch <- ggplot(unc.merge, aes(x=Dim1, y=Dim2,
   scale_fill_manual(values=batch.cols) +
   scale_y_continuous(limits=c(-50, 50)) +
   scale_x_continuous(limits=c(-50, 50)) +
-  labs(x="tSNE 1", y="tSNE 2", title="Uncorrected") +
+  labs(x="tSNE 1", y="tSNE 2") +
   guides(fill=FALSE) +
   theme(axis.title=element_text(size=24), axis.text=element_text(size=16))
 
@@ -302,17 +307,16 @@ ggsave(unc.bybatch,
 ##########################################################################
 ##########################################################################
 ## MNN batch correction
-# source the devel version of mnnCorrect for the purposes of the ms
-source("SomeFuncs/devel_mnnCorrect.R")
-hvg.common <- common.hvgs[common.hvgs %in% common.genes]
+
 Xmnn <- mnnCorrect(as.matrix(r.datah1[, 1:(dim(r.datah1)[2]-1)]),
                    as.matrix(r.datah2[, 1:(dim(r.datah2)[2]-1)]),
                    as.matrix(r.datah3[, 1:(dim(r.datah3)[2]-1)]),
                    as.matrix(r.datah4[, 1:(dim(r.datah4)[2]-1)]),
-                   hvg.genes=hvg.common, 
-                   svd.dim=FALSE,
-                   k=20, sigma=0.1,
-                   cos.norm="inside_and_output")
+                   svd.dim=0,
+                   subset.row=common.hvgs,
+                   cos.norm.in=TRUE, cos.norm.out=TRUE,
+                   var.adj=TRUE, 
+                   k=20, sigma=0.1)
 
 # combine corrected matrices together
 corrected.df <- do.call(cbind.data.frame, Xmnn$corrected)
@@ -322,7 +326,8 @@ colnames(corrected.df) <- c(colnames(r.datah1[, 1:(dim(r.datah1)[2]-1)]), colnam
                             colnames(r.datah3[, 1:(dim(r.datah3)[2]-1)]), colnames(r.datah4[, 1:(dim(r.datah4)[2]-1)]))
 
 set.seed(0)
-tsne.c <- Rtsne(corrected.mat, is_distance=FALSE, perplexity=30)
+tsne.c <- Rtsne(dist(corrected.mat),
+                is_distance=TRUE, perplexity=30)
 
 # input and output order are the same
 mnn.tsne <- data.frame(tsne.c$Y)
@@ -471,6 +476,9 @@ corrected.df$gene_id <- common.genes
 write.table(corrected.df, file="Pancreas/Data/mnnCorrected.tsv",
             row.names=FALSE, sep="\t", quote=FALSE)
 
+write.table(all.meta,
+            file="Pancreas/Data/mnnCorrected_metadata.tsv",
+            row.names=FALSE, sep="\t", quote=FALSE)
 ##################
 # output a few objects for use in other scripts for supplementary figures
 rownames(all.meta) <- all.meta$Sample
@@ -480,15 +488,8 @@ celltype2 <- all.meta[colnames(datah2), ]$CellType
 celltype3 <- all.meta[colnames(datah3), ]$CellType
 celltype4 <- all.meta[colnames(datah4), ]$CellType
 
-# this is a vector of highly genes that intersect the commonly expressed genes.
-all.hvg <- unique(c(HVG1, HVG2, HVG3, HVG4))
-hvg_genes <- intersect(common.genes, all.hvg)
-
 # serialize objects to an RDS file
-save(raw.all, corrected.df, lm.mat, combat.mat,
-     datah1, datah2, datah3, datah4,
+save(datah1, datah2, datah3, datah4,
      celltype1, celltype2, celltype3, celltype4,
-     HVG1, HVG2, HVG3, HVG4,
-     common.hvgs, hvg_genes,
-     all.meta, interact.cols,
+     hvg_genes,
      file="Pancreas/Data/ObjectsForPlotting.RDS")
