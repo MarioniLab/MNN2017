@@ -5,7 +5,7 @@ library(RColorBrewer)
 library(scran)
 library(igraph)
 
-pbmc.tsne <- read.table("~/CI_filesystem/mnt/scratcha/jmlab/morgan02/10X/MNN/results/corrected_tSNE.tsv",
+pbmc.tsne <- read.table("Droplet/Results/corrected_tSNE.tsv",
                         h=TRUE, sep="\t", stringsAsFactors=FALSE)
 
 pbmc.tsne$Study <- unlist(lapply(strsplit(pbmc.tsne$Sample, split=".", fixed=T),
@@ -13,11 +13,11 @@ pbmc.tsne$Study <- unlist(lapply(strsplit(pbmc.tsne$Sample, split=".", fixed=T),
 pbmc.tsne$Study[pbmc.tsne$Study == "pbmc"] <- "PBMC"
 pbmc.tsne$Study[pbmc.tsne$Study == "tcell"] <- "Tcells"
 
-pbmc.meta <- read.table("~/CI_filesystem/mnt/scratcha/jmlab/morgan02/10X/MNN/data/PBMC/PBMC_meta.tsv",
+pbmc.meta <- read.table("Droplet/10X_Data/PBMC/PBMC_meta.tsv",
                         h=TRUE, sep="\t", stringsAsFactors=FALSE)
 pbmc.meta$Sample <- paste("pbmc", pbmc.meta$Sample, sep=".")
 
-tcell.meta <- read.table("~/CI_filesystem/mnt/scratcha/jmlab/morgan02/10X/MNN/data/Tcell/Tcell_meta.tsv",
+tcell.meta <- read.table("Droplet/10X_Data/Tcell/Tcell_meta.tsv",
                          sep="\t", h=TRUE, stringsAsFactors=FALSE)
 tcell.meta$Sample <- paste("tcell", tcell.meta$Sample, sep=".")
 tcell.meta$Sample <- gsub(tcell.meta$Sample, pattern="-", replacement=".")
@@ -67,7 +67,7 @@ dev.off()
 
 # construct an SNN graph on the tSNE dimensions
 tsne.snn <- buildSNNGraph(t(pbmc.merge[, c("Dim1", "Dim2")]), k=100)
-tsne.community <- walktrap.community(tsne.snn, steps=8)
+tsne.community <- cluster_walktrap(tsne.snn, steps=8)
 
 tsne.cluster <- cbind.data.frame(pbmc.merge$Sample, tsne.community$membership)
 colnames(tsne.cluster) <- c("Sample", "NewCommunity")
@@ -92,21 +92,10 @@ pbmc.uber <- merge(pbmc.merge, tsne.cluster, by='Sample')
 # 
 # m.ensembl <- gene_symbol$ensembl_gene_id[gene_symbol$external_gene_name %in% m.genes]
 
-ggplot(pbmc.uber, aes(x=Dim1, y=Dim2, fill=as.factor(NewCommunity))) +
-  geom_point(shape=21, size=2)
+# ggplot(pbmc.uber, aes(x=Dim1, y=Dim2, fill=as.factor(NewCommunity))) +
+#   geom_point(shape=21, size=2)
 
 # plot the marker genes used to identify cell types against the communities to assign cell types
-
-
-
-# B cell: 2, 20, 33
-# DCs: 15, 18
-# macrophage: 11, 18, 31
-# monocyte: 11, 18, 29, 38
-# NK cell: 4, 17, 23, 34
-# NKT cells: 4, 6, 17, 21 
-# Unknown: 14
-# T cells: 
 
 pbmc.merge$NewCell <- "Unknown"
 pbmc.merge$NewCell[pbmc.merge$Community %in% c(1:4, 6:9, 11)] <- "T_cell"
