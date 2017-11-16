@@ -7,22 +7,23 @@ library(RColorBrewer)
 library(biomaRt)
 source("~/Dropbox/R_sessions/GGMike/theme_mike.R")
 
-pbmc <- read.table("~/CI_filesystem/mnt/scratcha/jmlab/morgan02/10X/MNN/results/PBMC_68k_corrected.tsv",
+pbmc <- read.table("Droplet/Results/PBMC_68k_corrected.tsv",
                    h=T, sep="\t", stringsAsFactors=FALSE)
 rownames(pbmc) <- pbmc$gene_id
 
-tcell.hvg <- read.table("~/CI_filesystem/mnt/scratcha/jmlab/morgan02/10X/MNN/data/Tcell/Tcell_hvg.tsv",
+tcell.hvg <- read.table("Droplet/Data/Tcell/Tcell_hvg.tsv",
                         h=T, sep="\t", stringsAsFactors=FALSE)
 
-pbmc.hvg <- read.table("~/CI_filesystem/mnt/scratcha/jmlab/morgan02/10X/MNN/data/PBMC/PBMC_hvg.tsv",
+pbmc.hvg <- read.table("Droplet/Data/PBMC/PBMC_hvg.tsv",
                        h=T, sep="\t", stringsAsFactors=FALSE)
 
 select.hvg <- intersect(tcell.hvg$HVG, pbmc.hvg$HVG)
 
-pbmc.tsne <- read.table("~/CI_filesystem/mnt/scratcha/jmlab/morgan02/10X/MNN/results/corrected_tSNE.tsv",
+pbmc.tsne <- read.table("Droplet/Results/corrected_tSNE.tsv",
                         h=TRUE, sep="\t", stringsAsFactors=FALSE)
 
-pbmc.clusters <- read.table()
+pbmc.community <- read.table("Droplet/Results/PBMC_Corrected_communities.tsv",
+                             h=TRUE, sep="\t", stringsAsFactors=FALSE)
 
 # map ensembl IDs to gene symbols to select a couple of marker genes for visualisation
 all.genes <- rownames(pbmc)
@@ -71,19 +72,19 @@ ggplot(pbmc.merge,
 # CD3+ CD16+ NKT cells: 10
 # Unknown clusters: 7, 9, 12, 14, 15
 
-# write out these cell identities
-pbmc.tsne$CellType <- "Unknown"
-pbmc.tsne$CellType[pbmc.tsne$Community %in% c(1, 6, 8, 11)] <- "T_cell"
-pbmc.tsne$CellType[pbmc.tsne$Community %in% c(13)] <- "B_cell"
-pbmc.tsne$CellType[pbmc.tsne$Community %in% c(3)] <- "monocyte"
-pbmc.tsne$CellType[pbmc.tsne$Community %in% c(2)] <- "macrophage"
-pbmc.tsne$CellType[pbmc.tsne$Community %in% c(5)] <- "DCs"
-pbmc.tsne$CellType[pbmc.tsne$Community %in% c(4)] <- "NKcell"
-pbmc.tsne$CellType[pbmc.tsne$Community %in% c(10)] <- "NKT"
-
-write.table(pbmc.tsne,
-            "~/CI_filesystem/mnt/scratcha/jmlab/morgan02/10X/MNN/data/PBMC/PBMC_meta.tsv",
-            sep="\t", quote=FALSE, row.names=FALSE)
+# # write out these cell identities
+# pbmc.tsne$CellType <- "Unknown"
+# pbmc.tsne$CellType[pbmc.tsne$Community %in% c(1, 6, 8, 11)] <- "T_cell"
+# pbmc.tsne$CellType[pbmc.tsne$Community %in% c(13)] <- "B_cell"
+# pbmc.tsne$CellType[pbmc.tsne$Community %in% c(3)] <- "monocyte"
+# pbmc.tsne$CellType[pbmc.tsne$Community %in% c(2)] <- "macrophage"
+# pbmc.tsne$CellType[pbmc.tsne$Community %in% c(5)] <- "DCs"
+# pbmc.tsne$CellType[pbmc.tsne$Community %in% c(4)] <- "NKcell"
+# pbmc.tsne$CellType[pbmc.tsne$Community %in% c(10)] <- "NKT"
+# 
+# write.table(pbmc.tsne,
+#             "~/CI_filesystem/mnt/scratcha/jmlab/morgan02/10X/MNN/data/PBMC/PBMC_meta.tsv",
+#             sep="\t", quote=FALSE, row.names=FALSE)
 
 # pbmc.merge$CellType <- "Unknown"
 # pbmc.merge$CellType[pbmc.merge$Community %in% c(1, 6, 8, 11)] <- "T_cell"
