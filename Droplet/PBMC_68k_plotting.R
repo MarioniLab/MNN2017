@@ -64,15 +64,12 @@ legend("topright", legend=unique(names(cell.cols)),
        inset=c(-0.35, 0))
 dev.off()
 
+pbmc.community <- read.table("Droplet/Results/PBMC_Corrected_communities.tsv",
+                             h=TRUE, sep="\t", stringsAsFactors=FALSE)
 
-# construct an SNN graph on the tSNE dimensions
-tsne.snn <- buildSNNGraph(t(pbmc.merge[, c("Dim1", "Dim2")]), k=100)
-tsne.community <- cluster_walktrap(tsne.snn, steps=8)
+pbmc.uber <- merge(pbmc.merge, pbmc.community, by='Sample')
+# community.y contains the new communities
 
-tsne.cluster <- cbind.data.frame(pbmc.merge$Sample, tsne.community$membership)
-colnames(tsne.cluster) <- c("Sample", "NewCommunity")
-
-pbmc.uber <- merge(pbmc.merge, tsne.cluster, by='Sample')
 
 # # get marker expression to identify cell types 
 # # map ensembl IDs to gene symbols to select a couple of marker genes for visualisation
@@ -105,4 +102,9 @@ pbmc.merge$NewCell[pbmc.merge$Community == 2] <- "macrophage"
 pbmc.merge$NewCell[pbmc.merge$Community == 3] <- "monocyte"
 pbmc.merge$NewCell[pbmc.merge$Community == 4] <- "NKcell"
 pbmc.merge$NewCell[pbmc.merge$Community == 10] <- "NKT"
+
+
+
+
+
 
