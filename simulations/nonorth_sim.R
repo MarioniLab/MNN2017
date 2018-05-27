@@ -41,7 +41,8 @@ cluster.id <- rep(rep(1:2, each=ncells), 2)
 
 pdf("nonorth_nonorth.pdf")
 for (x in names(out$mat)) {
-    plotResults(out$mat[[x]], cluster.id, out$batch, main=x)
+    plotResults(out$mat[[x]], cluster.id, out$batch, main=x,
+            pch.choices=c(16, 2))
 }
 dev.off()
 
@@ -66,7 +67,8 @@ cluster.id <- rep(rep(1:2, each=ncells), 2)
 
 pdf("nonorth_rotated.pdf")
 for (x in names(out$mat)) {
-    plotResults(out$mat[[x]], cluster.id, out$batch, main=x)
+    plotResults(out$mat[[x]], cluster.id, out$batch, main=x,
+            pch.choices=c(16, 2))
 }
 dev.off()
 

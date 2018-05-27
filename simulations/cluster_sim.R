@@ -27,7 +27,7 @@ for (it in seq_len(10)) {
     if (it==1L) {
         pdf("cluster_easy.pdf")
         for (type in names(out$mat)) {
-            plotResults(out$mat[[type]], cluster.id, out$batch, main=type)
+            plotResults(out$mat[[type]], cluster.id, out$batch, main=type, pch.choices=c(16, 2))
         }
         dev.off()
     }
@@ -54,7 +54,7 @@ for (it in seq_len(10)) {
     if (it==1L) {
         pdf("cluster_hard.pdf")
         for (type in names(out$mat)) {
-            plotResults(out$mat[[type]], cluster.id, out$batch, main=type)
+            plotResults(out$mat[[type]], cluster.id, out$batch, main=type, pch.choices=c(16, 2))
         }
         dev.off()
     }
@@ -81,7 +81,7 @@ for (it in seq_len(10)) {
     if (it==1L) {
         pdf("cluster_missing.pdf")
         for (type in names(out$mat)) {
-            plotResults(out$mat[[type]], cluster.id, out$batch, main=type)
+            plotResults(out$mat[[type]], cluster.id, out$batch, main=type, pch.choices=c(16, 2))
         }
         dev.off()
     }

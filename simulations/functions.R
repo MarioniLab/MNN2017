@@ -20,7 +20,7 @@ generateSamples <- function(means, SDs, ncells, ngenes=2000)
     }
 
     # Random projection to high-dimensional space.
-    proj <- matrix(rnorm(ngenes*total), nrow=ngenes, ncol=ndims)
+    proj <- matrix(rnorm(ngenes*ndims), nrow=ngenes, ncol=ndims)
     for (bdx in seq_len(nbatches)) {
         mat <- tcrossprod(all.dimensions[[bdx]], proj)
 
@@ -52,13 +52,16 @@ runAllMethods <- function(...)
 }
 
 library(Rtsne)
-plotResults <- function(mat, cluster.ids, batch.ids, main="", ...) 
+plotResults <- function(mat, cluster.ids, batch.ids, main="", 
+    pch.choices=seq_len(max(batch.ids)),
+    col.choices=rainbow(max(cluster.ids)),
+    ...) 
 # Creating t-SNE plots of the (corrected) expression matrices.
 {
     tout <- Rtsne(mat, ...)
     plot(tout$Y[,1], tout$Y[,2], xlab="t-SNE 1", ylab="t-SNE 2", 
-        col=rainbow(length(unique(cluster.ids)))[cluster.ids],
-        pch=batch.ids, main=main)
+        col=col.choices[cluster.ids],
+        pch=pch.choices[batch.ids], main=main)
 }
 
 getVarExplained <- function(mat, cluster.ids, batch.ids) 
