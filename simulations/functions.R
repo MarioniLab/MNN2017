@@ -1,9 +1,14 @@
-generateSamples <- function(means, SDs, ncells, ngenes=2000) 
+generateSamples <- function(ncells, ndims=2, ngenes=2000) 
 # Generating simulated high-dimensional expression data containing
 # cluster-based structure in a low-dimensional biological subspace.
 {
-    ndims <- ncol(means)
     nbatches <- ncol(ncells) 
+    nclusters <- nrow(ncells)
+
+    # Cells are distributed according to a multivariate normal in a low-dimensional biological subspace. 
+    # Each cell type has a different x/y center and a different SD.
+    means <- matrix(rnorm(nclusters * ndims, sd=5), ncol=ndims)
+    SDs <- matrix(rgamma(nclusters*ndims, 1, 1), ncol=ndims)
 
     all.dimensions <- all.clusters <- vector("list", nbatches)
     for (bdx in seq_len(nbatches)) {
@@ -37,6 +42,7 @@ generateSamples <- function(means, SDs, ncells, ngenes=2000)
 library(scran)
 library(sva)
 library(limma)
+library(Seurat)
 runAllMethods <- function(...) 
 # Running all batch correction methods.
 {
@@ -48,29 +54,51 @@ runAllMethods <- function(...)
     Xmnn <- do.call(mnnCorrect2, c(batches, list(cos.norm.in=FALSE, approximate=TRUE)))
     Xlm <- removeBatchEffect(uncorrected, factor(batch.id))
     Xcom <- ComBat(uncorrected, factor(batch.id), mod=NULL, prior.plots = FALSE)
-    return(list(mat=list(uncorrected=t(uncorrected), MNN=Xmnn$corrected, limma=t(Xlm), ComBat=t(Xcom)), batch=batch.id))
+
+    mat <- list(uncorrected=t(uncorrected), MNN=Xmnn$corrected, limma=t(Xlm), ComBat=t(Xcom))
+
+	if (length(batches)==2L) {
+        colnames(batches[[1]]) <- paste0("Cell", seq_len(ncol(batches[[1]])), "-1")
+        colnames(batches[[2]]) <- paste0("Cell", seq_len(ncol(batches[[2]])), "-2")
+        rownames(batches[[1]]) <- rownames(batches[[2]]) <- paste0("Gene", seq_len(nrow(batches[[1]])))
+
+        Se <- CreateSeuratObject(batches[[1]])
+		Se2 <- CreateSeuratObject(batches[[2]])
+	    Se@meta.data$group <- "group1"
+	    Se2@meta.data$group <- "group2"
+
+        Se <- ScaleData(Se)
+        Se2 <- ScaleData(Se2)
+        Y <- RunCCA(Se, Se2, genes.use=rownames(batches[[1]]), do.normalize=FALSE)
+        suppressWarnings(Y <- AlignSubspace(Y, grouping.var="group", dims.align=1:20))
+        mat$CCA <- Y@dr$cca.aligned@cell.embeddings
+    } 
+
+    return(list(mat=mat, batch=batch.id))
 }
 
 library(Rtsne)
-plotResults <- function(mat, cluster.ids, batch.ids, main="", 
+plotResults <- function(mat, cluster.ids, batch.ids, 
     pch.choices=seq_len(max(batch.ids)),
     col.choices=rainbow(max(cluster.ids)),
-    ...) 
+    main="", ...) 
 # Creating t-SNE plots of the (corrected) expression matrices.
 {
-    tout <- Rtsne(mat, ...)
+    tout <- Rtsne(mat, ..., check_duplicates=FALSE)
     plot(tout$Y[,1], tout$Y[,2], xlab="t-SNE 1", ylab="t-SNE 2", 
         col=col.choices[cluster.ids],
         pch=pch.choices[batch.ids], main=main)
 }
 
 getVarExplained <- function(mat, cluster.ids, batch.ids) 
-# Using the variance explained as a metric - 
+# Using the variance explained as a metric. Variance explained
+# by cluster (while blocking on batch) should be high, variance 
+# explained by batch (while blocking on cluster) should be low.
 {
     v0 <- .GVE(mat, batch.ids)
     v1 <- .GVE(mat, cluster.ids)
     v2 <- .GVE(mat, paste0(cluster.ids, batch.ids))
-    return(list(Cluster=v2/v0, Batch=v2/v1))
+    return(list(Cluster=1-v2/v0, Batch=1-v2/v1))
 }
 
 .GVE <- function(mat, block) {
