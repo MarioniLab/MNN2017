@@ -55,8 +55,9 @@ for (it in seq_len(10)) {
     mnn.stat <- getVarExplained(out$mat$MNN, cluster.id, out$batch)
     lm.stat <- getVarExplained(out$mat$limma, cluster.id, out$batch)
     com.stat <- getVarExplained(out$mat$ComBat, cluster.id, out$batch)
+    cca.stat <- getVarExplained(out$mat$CCA, cluster.id, out$batch)
     write.table(file="cluster_hard.tsv", 
-        data.frame(Uncorrected=unc.stat, MNN=mnn.stat, limma=lm.stat, ComBat=com.stat),
+        data.frame(Uncorrected=unc.stat, MNN=mnn.stat, limma=lm.stat, ComBat=com.stat, CCA=cca.stat),
         sep="\t", quote=FALSE, row.names=FALSE, append=(it>1L), col.names=(it==1L))
 }
 
@@ -83,8 +84,9 @@ for (it in seq_len(10)) {
     mnn.stat <- getVarExplained(out$mat$MNN, cluster.id, out$batch)
     lm.stat <- getVarExplained(out$mat$limma, cluster.id, out$batch)
     com.stat <- getVarExplained(out$mat$ComBat, cluster.id, out$batch)
+    cca.stat <- getVarExplained(out$mat$CCA, cluster.id, out$batch)
     write.table(file="cluster_missing.tsv", 
-        data.frame(Uncorrected=unc.stat, MNN=mnn.stat, limma=lm.stat, ComBat=com.stat),
+        data.frame(Uncorrected=unc.stat, MNN=mnn.stat, limma=lm.stat, ComBat=com.stat, CCA=cca.stat),
         sep="\t", quote=FALSE, row.names=FALSE, append=(it>1L), col.names=(it==1L))
 }
 
