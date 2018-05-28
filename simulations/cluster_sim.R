@@ -62,7 +62,7 @@ for (it in seq_len(10)) {
 }
 
 ########################################################################
-# Finally, simulating the hardest scenario where one population is just absent.
+# Simulating the hardest scenario where one population is just absent.
     
 prop1 <- c(300, 500, 200)
 prop2 <- c(800, 200, 0)
@@ -87,6 +87,35 @@ for (it in seq_len(10)) {
     cca.stat <- getVarExplained(out$mat$CCA, cluster.id, out$batch)
     write.table(file="cluster_missing.tsv", 
         data.frame(Uncorrected=unc.stat, MNN=mnn.stat, limma=lm.stat, ComBat=com.stat, CCA=cca.stat),
+        sep="\t", quote=FALSE, row.names=FALSE, append=(it>1L), col.names=(it==1L))
+}
+
+########################################################################
+# Simulating three batches as a combination of the two above scenarios.
+    
+prop1 <- c(300, 500, 200)
+prop2 <- c(100, 200, 800)
+prop3 <- c(800, 200, 0)
+for (it in seq_len(10)) { 
+    set.seed(it*10000) # Avoid issues with seeds being reset within a function.
+    all.res <- generateSamples(ncells=cbind(prop1, prop2, prop3))
+    cluster.id <- unlist(all.res$id)
+    out <- runAllMethods(all.res$mat[[1]], all.res$mat[[2]], all.res$mat[[3]])
+
+    if (it==1L) {
+        pdf("cluster_three.pdf")
+        for (type in names(out$mat)) {
+            plotResults(out$mat[[type]], cluster.id, out$batch, main=type, pch.choices=c(16, 2, 4))
+        }
+        dev.off()
+    }
+
+    unc.stat <- getVarExplained(out$mat$uncorrected, cluster.id, out$batch)
+    mnn.stat <- getVarExplained(out$mat$MNN, cluster.id, out$batch)
+    lm.stat <- getVarExplained(out$mat$limma, cluster.id, out$batch)
+    com.stat <- getVarExplained(out$mat$ComBat, cluster.id, out$batch)
+    write.table(file="cluster_three.tsv", 
+        data.frame(Uncorrected=unc.stat, MNN=mnn.stat, limma=lm.stat, ComBat=com.stat),
         sep="\t", quote=FALSE, row.names=FALSE, append=(it>1L), col.names=(it==1L))
 }
 
