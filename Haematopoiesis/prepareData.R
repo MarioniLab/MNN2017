@@ -112,8 +112,8 @@ aveF <- calcAverage(sceF)
 sizeFactors(sceF) <- sizeFactors(sceF) * median(aveF/aveA)
 
 # Save results to file.
-sceA <- normalize(sceA)
-sceF <- normalize(sceF)
+sceA <- normalize(sceA, centre_size_factors=FALSE)
+sceF <- normalize(sceF, centre_size_factors=FALSE)
 saveRDS(sceA, file="haem_data_A.rds")
 saveRDS(sceF, file="haem_data_F.rds")
 

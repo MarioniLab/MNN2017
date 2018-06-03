@@ -44,14 +44,15 @@ library(sva)
 library(limma)
 library(Seurat)
 runAllMethods <- function(...) 
-# Running all batch correction methods.
+# Running all batch correction methods. We turn off any extra normalization; for these 
+# simulations, all input data are assumed to be perfectly normalized as provided.
 {
 	batches <- list(...)
     uncorrected <- do.call(cbind, batches)
 	per.batch <- unlist(lapply(batches, FUN=ncol))
     batch.id <- rep(seq_along(batches), per.batch)
 
-    Xmnn <- do.call(mnnCorrect2, c(batches, list(cos.norm.in=FALSE, approximate=TRUE)))
+    Xmnn <- do.call(fastMNN, c(batches, list(cos.norm=FALSE, approximate=TRUE)))
     Xlm <- removeBatchEffect(uncorrected, factor(batch.id))
     Xcom <- ComBat(uncorrected, factor(batch.id), mod=NULL, prior.plots = FALSE)
 
@@ -62,14 +63,14 @@ runAllMethods <- function(...)
         colnames(batches[[2]]) <- paste0("Cell", seq_len(ncol(batches[[2]])), "-2")
         rownames(batches[[1]]) <- rownames(batches[[2]]) <- paste0("Gene", seq_len(nrow(batches[[1]])))
 
-        Se <- CreateSeuratObject(batches[[1]])
-		Se2 <- CreateSeuratObject(batches[[2]])
-	    Se@meta.data$group <- "group1"
-	    Se2@meta.data$group <- "group2"
+        Seu1 <- CreateSeuratObject(batches[[1]])
+		Seu2 <- CreateSeuratObject(batches[[2]])
+	    Seu1@meta.data$group <- "group1"
+	    Seu2@meta.data$group <- "group2"
 
-        Se <- ScaleData(Se)
-        Se2 <- ScaleData(Se2)
-        Y <- RunCCA(Se, Se2, genes.use=rownames(batches[[1]]), do.normalize=FALSE)
+        Seu1 <- ScaleData(Seu1)
+        Seu2 <- ScaleData(Seu2)
+        Y <- RunCCA(Seu1, Seu2, genes.use=rownames(batches[[1]]), do.normalize=FALSE)
         suppressWarnings(Y <- AlignSubspace(Y, grouping.var="group", dims.align=1:20))
         mat$CCA <- Y@dr$cca.aligned@cell.embeddings
     } 

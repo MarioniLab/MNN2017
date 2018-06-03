@@ -112,7 +112,7 @@ gc()
 # Performing the correction with faster MNN.
 
 set.seed(1000)
-mnn.out2 <- mnnCorrect2(logcounts(sceF), logcounts(sceA), k=20, approximate=TRUE, cos.norm.in=TRUE)
+mnn.out2 <- fastMNN(logcounts(sceF), logcounts(sceA), k=20, approximate=TRUE, cos.norm.in=TRUE)
 t.mnn <- mnn.out2$corrected
 
 # Generating a t-SNE plot.
