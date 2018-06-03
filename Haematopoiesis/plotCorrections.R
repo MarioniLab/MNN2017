@@ -1,127 +1,131 @@
-# Batch correction and t-SNE plots of haematopoietic data sets, as in Figure 3.
-this.dir <- dirname(parent.frame(2)$ofile)
-setwd(this.dir)
+# This script performs batch correction with each method and creates t-SNE plots
+# for the haematopoietic data sets; this corresponds to Figure 3 of the manuscript.
 
 library(scran)
 dir.create("results", showWarning=FALSE)
+sceA <- readRDS("haem_data_A.rds")
+sceF <- readRDS("haem_data_F.rds")
 
-# Load the output of "preparedata.R".
-load("logdataFandA_all.RData") 
-colnames(logDataF3)[colnames(logDataF3)=="other"] <- "Unsorted"
-colnames(logDataA3)[colnames(logDataA3)=="ERY"] <- "MEP"
-raw.all <- cbind(logDataF3, logDataA3)
-first.batch <- rep(c(TRUE, FALSE), c(ncol(logDataF3), ncol(logDataA3)))
+# Load data.
+sceF$CellType[sceF$CellType=="other"] <- "Unsorted"
+sceA$CellType[sceA$CellType=="ERY"] <- "MEP"
+sce <- cbind(sceF, sceA)
+sce$Batch <- rep(c(TRUE, FALSE), c(ncol(sceF), ncol(sceA)))
 
 # Adding colours.
-#base.color <- "grey"
 color.legendF <- c(MEP="orange", GMP="chartreuse4", CMP="magenta", 
                    HSPC="cyan", LTHSC="dodgerblue", MPP="blue", LMPP="light blue", Unsorted="grey")
 colmatF <- col2rgb(color.legendF) 
-
 colmatA <- colmatF + 100 # A lighter shade.
 colmatA[colmatA > 255] <- 255
 
-#colmatF<-colmatF+200
-#colmatF[colmatF > 255] <- 255
 color.legendA <- setNames(rgb(colmatA[1,], colmatA[2,], colmatA[3,], maxColorValue=255), names(color.legendF))
-allcolors <- c(color.legendF[colnames(logDataF3)], color.legendA[colnames(logDataA3)])
-batch<-c( rep(1,ncol(logDataF3)),rep(2,ncol(logDataA3)) )
+allcolors <- c(color.legendF[sceF$CellType], color.legendA[sceA$CellType])
+first.batch <- rep(c(TRUE, FALSE), c(ncol(sceF), ncol(sceA)))
 
 # Only keeping common cell types for PCA.
-celltypes <- c(colnames(logDataF3), colnames(logDataA3))
-pca.retain <- celltypes %in% c("MEP", "GMP", "CMP") 
+pca.retain <- sce$CellType %in% c("MEP", "GMP", "CMP") 
 
 # Making a plotting function.
 plotFUN <- function(fname, Y, subset=NULL, ..., xlab="tSNE 1",ylab="tSNE 2",main="") {
-  if (is.null(subset)) {
-    subset <- seq_len(nrow(Y))
-  }
-  png(fname,width=900,height=700)
-  par(mfrow=c(1,1),mar=c(6,6,4,2),cex.axis=2,cex.main=3,cex.lab=2.5)
-  plot(Y[,1], Y[,2], cex=2,
-       pch=ifelse(first.batch, 21, 1)[subset], 
-       col=ifelse(first.batch, "black", allcolors)[subset],
-       bg=allcolors[subset], xlab=xlab, ylab=ylab, main=main) 
+    if (is.null(subset)) {
+        subset <- seq_len(nrow(Y))
+    }
+    png(fname,width=900,height=700)
+    par(mfrow=c(1,1),mar=c(6,6,4,2),cex.axis=2,cex.main=3,cex.lab=2.5)
+    plot(Y[,1], Y[,2], cex=2,
+         pch=ifelse(first.batch, 21, 1)[subset], 
+         col=ifelse(first.batch, "black", allcolors)[subset],
+         bg=allcolors[subset], xlab=xlab, ylab=ylab, main=main) 
     dev.off()
 }
 
-batchcolor=c("lavender","lightcoral")
+batchcolor <- c("lavender","lightcoral")[first.batch + 1]
 plotFUNb <- function(fname, Y, subset=NULL, ...) {
-  if (is.null(subset)) {
-    subset <- seq_len(nrow(Y))
-  }
-  png(fname,width=900,height=700)
-  par(mfrow=c(1,1),mar=c(6,6,4,2),cex.axis=2,cex.main=3,cex.lab=2.5)
-  plot(Y[,1], Y[,2], cex=2,
-       pch=ifelse(first.batch, 21, 1)[subset], 
-       col=ifelse(first.batch, "black", batchcolor[batch[subset]]),
-       bg=batchcolor[batch[subset]], ...)#,  xlab="tSNE 1",ylab="tSNE 2")
-  dev.off()
+    if (is.null(subset)) {
+        subset <- seq_len(nrow(Y))
+    }
+    png(fname,width=900,height=700)
+    par(mfrow=c(1,1),mar=c(6,6,4,2),cex.axis=2,cex.main=3,cex.lab=2.5)
+    plot(Y[,1], Y[,2], cex=2,
+         pch=ifelse(first.batch, 21, 1)[subset], 
+         col=ifelse(first.batch, "black", batchcolor)[subset],
+         bg=batchcolor[subset], ...)
+    dev.off()
 }
 
 ######################
 # No correction.
 
-X.unc <- raw.all
-t.unc <- t(X.unc)
+t.unc <- as.matrix(t(logcounts(sce)))
 
 ## Generating a t-SNE plot.
-require(Rtsne)
-set.seed(0)
-all.dists.unc <- as.matrix(dist(t.unc))
-tsne.unc <- Rtsne(all.dists.unc, is_distance=TRUE, perplexity = 90)
-plotFUN("results/uncFA.png", tsne.unc$Y, main="Uncorrected",  xlab="tSNE 1",ylab="tSNE 2")
-plotFUNb("results/uncFAb.png", tsne.unc$Y, main="Uncorrected",  xlab="tSNE 1",ylab="tSNE 2")
+library(Rtsne)
+tsne.unc <- Rtsne(t.unc, perplexity = 90)
+plotFUN("results/tsne_unc_type.png", tsne.unc$Y, main="Uncorrected", xlab="tSNE 1",ylab="tSNE 2")
+plotFUNb("results/tsne_unc_batch.png", tsne.unc$Y, main="Uncorrected", xlab="tSNE 1",ylab="tSNE 2")
 
-rm(all.dists.unc)
 gc()
 
 # Generating a PCA plot.
 pca.unc <- prcomp(t.unc[pca.retain,], rank=2)
-pca.unc$x[ (pca.unc$x<(-0.08))]<- (-0.08)
-plotFUN("results/pca_raw.png", pca.unc$x, subset=pca.retain, main="Uncorrected", ylim=c(-0.1, max(pca.unc$x[,2])),  xlab="PC 1",ylab="PC 2")
+plotFUN("results/pca_unc_type.png", pca.unc$x, subset=pca.retain, main="Uncorrected", xlab="PC 1",ylab="PC 2")
+plotFUNb("results/pca_unc_batch.png", pca.unc$x, subset=pca.retain, main="Uncorrected", xlab="PC 1",ylab="PC 2")
 
 rm(t.unc)
 gc()
+
 ######################## 
 # Performing the correction with MNN (turned down the sigma to improve mixing).
 
-mnn.out<-mnnCorrect(logDataF3, logDataA3,k=20, sigma=0.1,cos.norm.in=TRUE, cos.norm.out=TRUE, var.adj=TRUE,compute.angle=TRUE)
+mnn.out <- mnnCorrect(logcounts(sceF), logcounts(sceA), k=20, sigma=0.1,cos.norm.in=TRUE, cos.norm.out=TRUE, var.adj=TRUE,compute.angle=TRUE)
+t.mnn <- as.matrix(t(do.call(cbind, mnn.out$corrected)))
 
-X.mnn <- cbind(mnn.out$corrected[[1]], mnn.out$corrected[[2]])
-t.mnn <- t(X.mnn)
+#png(file="results/angles.png",width=900,height=700)
+#par(mfrow=c(1,1),mar=c(6,6,4,2),cex.axis=2,cex.main=3,cex.lab=2.5)
+#hist(mnn.out$angles[[2]],xlab="Angle",ylab="Frequency",main="")
+#dev.off()
 
-# plot histogram of angles between batch vectors and 2 svds of the reference batch.
-png(file="results/angles.png",width=900,height=700)
-par(mfrow=c(1,1),mar=c(6,6,4,2),cex.axis=2,cex.main=3,cex.lab=2.5)
-hist(mnn.out$angles[[2]],xlab="Angle",ylab="Frequency",main="")
-dev.off()
 # Generating a t-SNE plot.
 set.seed(0)
-all.dists.mnn <- as.matrix(dist(t.mnn))
-tsne.mnn <- Rtsne(all.dists.mnn, is_distance=TRUE, perplexity = 90)
-plotFUN("results/mnnFA.png", tsne.mnn$Y, main="MNN",  xlab="tSNE 1",ylab="tSNE 2")
-plotFUNb("results/mnnFAb3.png", tsne.mnn$Y, main="MNN",  xlab="tSNE 1",ylab="tSNE 2")
-
-set.seed(0)
-tsne.mnn2 <- Rtsne(t.mnn, perplexity = 90)
-plotFUN("results/mnnFA_conventsne.png", tsne.mnn2$Y, main="MNN",  xlab="tSNE 1",ylab="tSNE 2")
-
-rm(all.dists.mnn)
+tsne.mnn <- Rtsne(t.mnn, perplexity = 90)
+plotFUN("results/tsne_mnn_type.png", tsne.mnn$Y, main="MNN", xlab="tSNE 1",ylab="tSNE 2")
+plotFUNb("results/tsne_mnn_batch.png", tsne.mnn$Y, main="MNN", xlab="tSNE 1",ylab="tSNE 2")
 gc()
-
 
 # Generating a PCA plot.
 pca.mnn <- prcomp(t.mnn[pca.retain,], rank=2)
-#pca.mnn$x[ (pca.mnn$x<(-0.08))]<- (-0.08)
-plotFUN("results/pca_mnn.png", pca.mnn$x, subset=pca.retain, main="MNN", ylim=c(-0.08,0.05),  xlab="PC 1",ylab="PC 2")
+plotFUN("results/pca_mnn_type.png", pca.mnn$x, subset=pca.retain, main="MNN", xlab="PC 1",ylab="PC 2")
+plotFUNb("results/pca_mnn_batch.png", pca.mnn$x, subset=pca.retain, main="MNN", xlab="PC 1",ylab="PC 2")
 
-# Generating diffusion map plots.
-library(destiny)
-dm<-DiffusionMap(t.mnn,n_local = 150)
-plotFUN("results/mnnFAdm12.png", dm@eigenvectors[,1:2], main="MNN",  xlab="DC 1",ylab="DC 2")
-plotFUN("results/mnnFAdm23.png", cbind(dm@eigenvectors[,2],dm@eigenvectors[,3]), main="MNN",  xlab="DC 2",ylab="DC 4")
-plotFUN("results/mnnFAdm13.png", cbind(dm@eigenvectors[,1],dm@eigenvectors[,3]), main="MNN",  xlab="DC 2",ylab="DC 4")
+## Generating diffusion map plots.
+#library(destiny)
+#dm<-DiffusionMap(t.mnn,n_local = 150)
+#plotFUN("results/mnnFAdm12.png", dm@eigenvectors[,1:2], main="MNN",  xlab="DC 1",ylab="DC 2")
+#plotFUN("results/mnnFAdm23.png", cbind(dm@eigenvectors[,2],dm@eigenvectors[,3]), main="MNN",  xlab="DC 2",ylab="DC 4")
+#plotFUN("results/mnnFAdm13.png", cbind(dm@eigenvectors[,1],dm@eigenvectors[,3]), main="MNN",  xlab="DC 2",ylab="DC 4")
+
+rm(t.mnn)
+gc()
+
+######################## 
+# Performing the correction with faster MNN.
+
+set.seed(1000)
+mnn.out2 <- mnnCorrect2(logcounts(sceF), logcounts(sceA), k=20, approximate=TRUE, cos.norm.in=TRUE)
+t.mnn <- mnn.out2$corrected
+
+# Generating a t-SNE plot.
+set.seed(0)
+tsne.mnn <- Rtsne(t.mnn, perplexity = 90)
+plotFUN("results/tsne_mnn2_type.png", tsne.mnn$Y, main="Fast MNN", xlab="tSNE 1",ylab="tSNE 2")
+plotFUNb("results/tsne_mnn2_batch.png", tsne.mnn$Y, main="Fast MNN", xlab="tSNE 1",ylab="tSNE 2")
+gc()
+
+# Generating a PCA plot.
+pca.mnn <- prcomp(t.mnn[pca.retain,], rank=2)
+plotFUN("results/pca_mnn2_type.png", pca.mnn$x, subset=pca.retain, main="Fast MNN", xlab="PC 1",ylab="PC 2")
+plotFUN("results/pca_mnn2_batch.png", pca.mnn$x, subset=pca.retain, main="Fast MNN", xlab="PC 1",ylab="PC 2")
 
 rm(t.mnn)
 gc()
@@ -130,24 +134,21 @@ gc()
 # Performing the correction with limma.
 
 library(limma)
-X.lm <- removeBatchEffect(raw.all, factor(first.batch))
+X.lm <- removeBatchEffect(as.matrix(logcounts(sce)), factor(first.batch))
 t.lm <- t(X.lm)
 
 ## Generating a t-SNE plot.
 set.seed(0)
-all.dists.lm <- as.matrix(dist(t.lm))
-tsne.lm <- Rtsne(all.dists.lm, is_distance=TRUE, perplexity = 90)
-plotFUN("results/lmfitFA.png", tsne.lm$Y, main="limma",  xlab="tSNE 1",ylab="tSNE 2")
-plotFUNb("results/lmfitFAb.png", tsne.lm$Y, main="limma",  xlab="tSNE 1",ylab="tSNE 2")
+tsne.lm <- Rtsne(t.lm, perplexity = 90)
+plotFUN("results/tsne_limma_type.png", tsne.lm$Y, main="limma", xlab="tSNE 1",ylab="tSNE 2")
+plotFUNb("results/tsne_limma_batch.png", tsne.lm$Y, main="limma", xlab="tSNE 1",ylab="tSNE 2")
 
-rm(all.dists.lm)
 gc()
 
 # Generating a PCA plot.
 pca.lm <- prcomp(t.lm[pca.retain,], rank=2)
-pca.lm$x[ (pca.lm$x[,2] > (0.08)),2]<- (0.08)
-
-plotFUN("results/pca_lm.png", pca.lm$x, subset=pca.retain, main="limma", ylim=c(min(pca.lm$x[,2]), 0.05),  xlab="PC 1",ylab="PC 2")
+plotFUN("results/pca_limma_type.png", pca.lm$x, subset=pca.retain, main="limma", xlab="PC 1",ylab="PC 2")
+plotFUNb("results/pca_limma_batch.png", pca.lm$x, subset=pca.retain, main="limma", xlab="PC 1",ylab="PC 2")
 
 rm(t.lm)
 gc()
@@ -157,25 +158,90 @@ gc()
 
 library(sva)
 Z <- factor(first.batch)
-X.combat <- ComBat(raw.all,Z,mod=NULL,prior.plots = FALSE)
+X.combat <- ComBat(as.matrix(logcounts(sce)), Z, mod=NULL,prior.plots = FALSE)
 t.combat <- t(X.combat)
 
 ## Generating a t-SNE plot.
 set.seed(0)
-all.dists.combat <- as.matrix(dist(t.combat))
-tsne.combat<-Rtsne(all.dists.combat, is_distance=TRUE,perplexity = 90)
-plotFUN("results/combatFA.png", tsne.combat$Y, main="ComBat",  xlab="tSNE 1",ylab="tSNE 2")
-plotFUNb("results/combatFAb.png", tsne.combat$Y, main="ComBat",  xlab="tSNE 1",ylab="tSNE 2")
+tsne.combat <- Rtsne(t.combat, perplexity = 90)
+plotFUN("results/tsne_combat_type.png", tsne.combat$Y, main="ComBat", xlab="tSNE 1",ylab="tSNE 2")
+plotFUNb("results/tsne_combat_batch.png", tsne.combat$Y, main="ComBat", xlab="tSNE 1",ylab="tSNE 2")
 
-rm(all.dists.combat)
 gc()
 
 # Generating a PCA plot.
 pca.combat <- prcomp(t.combat[pca.retain,], rank=2)
-plotFUN("results/pca_com.png", pca.combat$x, subset=pca.retain, main="ComBat", ylim=c(min(pca.combat$x[,2]), 0.05),  xlab="PC 1",ylab="PC 2")
+plotFUN("results/pca_combat_type.png", pca.combat$x, subset=pca.retain, main="ComBat", xlab="PC 1",ylab="PC 2")
+plotFUNb("results/pca_combat_batch.png", pca.combat$x, subset=pca.retain, main="ComBat", xlab="PC 1",ylab="PC 2")
 
 rm(t.combat)
 gc()
+
+######################## 
+# Performing the correction with CCA.
+
+library(Seurat)
+SeuA <- CreateSeuratObject(logcounts(sceA))
+SeuF <- CreateSeuratObject(logcounts(sceF))
+SeuA@meta.data$group <- "group1"
+SeuF@meta.data$group <- "group2"
+
+SeuA <- ScaleData(SeuA)
+SeuF <- ScaleData(SeuF)
+Y <- RunCCA(SeuA, SeuF, genes.use=rownames(sceA), do.normalize=FALSE)
+suppressWarnings(Y <- AlignSubspace(Y, grouping.var="group", dims.align=1:20))
+
+t.cca <- Y@dr$cca.aligned@cell.embeddings
+
+## Generating a t-SNE plot.
+set.seed(0)
+tsne.cca <- Rtsne(t.cca, perplexity = 90)
+plotFUN("results/tsne_cca_type.png", tsne.cca$Y, main="CCA", xlab="tSNE 1",ylab="tSNE 2")
+plotFUNb("results/tsne_cca_batch.png", tsne.cca$Y, main="CCA", xlab="tSNE 1",ylab="tSNE 2")
+
+gc()
+
+# Generating a PCA plot.
+pca.cca <- prcomp(t.cca[pca.retain,], rank=2)
+plotFUN("results/pca_cca_type.png", pca.cca$x, subset=pca.retain, main="CCA", xlab="PC 1",ylab="PC 2")
+plotFUNb("results/pca_cca_batch.png", pca.cca$x, subset=pca.retain, main="CCA", xlab="PC 1",ylab="PC 2")
+
+rm(t.cca)
+gc()
+
+######################## 
+# Performing the correction with CCA, starting from the raw counts and normalizing it their way.
+
+library(Seurat)
+SeuA <- CreateSeuratObject(counts(sceA))
+SeuF <- CreateSeuratObject(counts(sceF))
+SeuA@meta.data$group <- "group1"
+SeuF@meta.data$group <- "group2"
+
+SeuA <- NormalizeData(SeuA)
+SeuF <- NormalizeData(SeuF)
+SeuA <- ScaleData(SeuA)
+SeuF <- ScaleData(SeuF)
+Y <- RunCCA(SeuA, SeuF, genes.use=rownames(sceA))
+suppressWarnings(Y <- AlignSubspace(Y, grouping.var="group", dims.align=1:20))
+
+t.cca <- Y@dr$cca.aligned@cell.embeddings
+
+## Generating a t-SNE plot.
+set.seed(0)
+tsne.cca2 <- Rtsne(t.cca, perplexity = 90)
+plotFUN("results/tsne_cca2_type.png", tsne.cca2$Y, main="CCA native", xlab="tSNE 1",ylab="tSNE 2")
+plotFUNb("results/tsne_cca2_batch.png", tsne.cca2$Y, main="CCA native", xlab="tSNE 1",ylab="tSNE 2")
+gc()
+
+# Generating a PCA plot.
+pca.cca2 <- prcomp(t.cca[pca.retain,], rank=2)
+plotFUN("results/pca_cca2_type.png", pca.cca2$x, subset=pca.retain, main="CCA native", xlab="PC 1",ylab="PC 2")
+plotFUNb("results/pca_cca2_batch.png", pca.cca2$x, subset=pca.retain, main="CCA native", xlab="PC 1",ylab="PC 2")
+
+rm(t.cca)
+gc()
+
 
 ######################## 
 # Making the legend (using PDF for better resolution).
