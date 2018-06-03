@@ -23,7 +23,7 @@ L2 <- all.L[[2]]
 #########################################################
 # Simulating a batch vector with orthogonal and non-orthogonal components.
 
-shift <- matrix(c(0.5,-0.5), ncells*2, 2, byrow=TRUE)
+shift <- matrix(c(0.3,-0.3), ncells*2, 2, byrow=TRUE)
 L2b <- L2 + shift
 
 plot(L1, col="red", pch=rep(1:2, each=ncells),
