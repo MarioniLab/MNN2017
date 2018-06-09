@@ -12,10 +12,7 @@ library(SingleCellExperiment)
 ##############
 
 # Download file from GEO.
-gse81076 <- 'GSE81076_D2_3_7_10_17.txt.gz'
-if (!file.exists(gse81076)) { 
-    download.file("ftp://ftp.ncbi.nlm.nih.gov/geo/series/GSE81nnn/GSE81076/suppl/GSE81076%5FD2%5F3%5F7%5F10%5F17%2Etxt%2Egz", gse81076)
-}
+gse81076 <- file.path('raw_data', 'GSE81076_D2_3_7_10_17.txt.gz')
 gse81076.df <- readSparseCounts(gse81076)
 
 # Construct the meta data from the cell names.
@@ -59,10 +56,7 @@ gc()
 ##############
 
 # Download file from GEO.
-gse85241 <- 'GSE85241_cellsystems_dataset_4donors_updated.csv.gz'
-if (!file.exists(gse85241)) { 
-    download.file("ftp://ftp.ncbi.nlm.nih.gov/geo/series/GSE85nnn/GSE85241/suppl/GSE85241%5Fcellsystems%5Fdataset%5F4donors%5Fupdated%2Ecsv%2Egz", gse85241)
-}
+gse85241 <- file.path('raw_data', 'GSE85241_cellsystems_dataset_4donors_updated.csv.gz')
 gse85241.df <- readSparseCounts(gse85241, quote='"')
 
 # Construct the meta data from the cell names.
