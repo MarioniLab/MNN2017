@@ -42,7 +42,7 @@ set.seed(1000)
 clusters <- quickCluster(sce.gse81076, min.mean=0.1, method="igraph")
 sce.gse81076 <- computeSumFactors(sce.gse81076, clusters=clusters, min.mean=0.1)
 
-sce.gse81076 <- computeSpikeFactors(sce.gse81076)
+sce.gse81076 <- computeSpikeFactors(sce.gse81076, general.use=FALSE)
 sce.gse81076 <- normalize(sce.gse81076)
 saveRDS(file="gse81076.rds", sce.gse81076)
 
@@ -86,7 +86,7 @@ set.seed(1000)
 clusters <- quickCluster(sce.gse85241, min.mean=0.1, method="igraph")
 sce.gse85241 <- computeSumFactors(sce.gse85241, clusters=clusters, min.mean=0.1)
 
-sce.gse85241 <- computeSpikeFactors(sce.gse85241)
+sce.gse85241 <- computeSpikeFactors(sce.gse85241, general.use=FALSE)
 sce.gse85241 <- normalize(sce.gse85241)
 saveRDS(file="gse85241.rds", sce.gse85241)
 
@@ -147,10 +147,10 @@ sce.gse86473 <- sce.gse86473[,!discard]
 
 # Compute normalization factors.
 set.seed(1000)
-clusters <- quickCluster(sce.gse86473, min.mean=1, method="igraph", k=4)
+clusters <- quickCluster(sce.gse86473, min.mean=1, method="igraph")
 sce.gse86473 <- computeSumFactors(sce.gse86473, clusters=clusters, min.mean=1)
 
-#sce.gse86473 <- computeSpikeFactors(sce.gse86473) # As there are actually no spike-in counts.
+#sce.gse86473 <- computeSpikeFactors(sce.gse86473, general.use=FALSE) # As there are actually no spike-in counts, anywhere.
 sce.gse86473 <- normalize(sce.gse86473)
 saveRDS(file="gse86473.rds", sce.gse86473)
 
