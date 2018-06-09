@@ -162,95 +162,67 @@ gc()
 ## E-MTAB-5061 ##
 #################
 
-# the download file contains columns of RPKM & counts
-# need to pull out just the integer gene count columns
-emtab_combined <- "Pancreas/RawData/EMTAB5061_rpkm_counts.txt.zip"
-if(!file.exists(emtab_combined)){ download.file("https://www.ebi.ac.uk/arrayexpress/experiments/E-MTAB-5061/files/E-MTAB-5061.processed.1.zip",
-              emtab_combined)}
+# Unpacking the file:
+# - First 2 columns are gene symbol and NCBI ID.
+# - Next X columns are the RPKMs.
+# - Remaining X columns are the counts.
 
-# need to unzip via a system call
-unzip.file <- "Pancreas/RawData/pancreas_refseq_rpkms_counts_3514sc.txt"
-if(!file.exists(unzip.file)) {system(paste0("unzip ", emtab_combined, " -d ", "Pancreas/RawData/"))}
+emat <- "raw_data/pancreas_refseq_rpkms_counts_3514sc.txt"
+col.names <- read.table(emat, header=FALSE, sep="\t", stringsAsFactors=FALSE, comment.char="", nrows = 1)[,-1]
+ncells <- length(col.names)
 
-emtab.df <- read.table(unzip.file,
-                       h=FALSE, sep="\t", stringsAsFactors=F)
+what <- vector("list", ncells*2 + 2)
+what[[1]] <- "character"
+what[seq_len(ncells) + ncells + 2] <- "integer"
 
-col.names <- unlist(read.table("Pancreas/RawData/pancreas_refseq_rpkms_counts_3514sc.txt",
-                        h=FALSE, sep="\t", stringsAsFactors=F, comment.char="", nrows = 1))
+emtab.df <- read.table(emat, header=FALSE, sep="\t", stringsAsFactors=FALSE, colClasses=what, skip=1)
+emtab.df <- emtab.df[!duplicated(emtab.df[,1]),]
+row.names <- emtab.df[,1]
+emtab.df <- emtab.df[,-1]
 
-# first 2 columns are gene symbol and NCBI ID
-# because of the way that this table is constructed, there are two cells for each column, but they
-# are not contiguous.  Therefore, the sample names need to be read in separately to the counts/rpkm table
+rownames(emtab.df) <- row.names
+colnames(emtab.df) <- col.names
 
-emtab5061.df <- emtab.df[, c(1, 3517:dim(emtab.df)[2])]
-colnames(emtab5061.df) <- gsub(col.names, pattern="#samples", replacement="gene_id")
-
-# download sdrf file direct from arrayExpress
-emtab.file <- "Pancreas/RawData/E-MTAB-5061.sdrf.txt"
-if(!file.exists(emtab.file)) {download.file("https://www.ebi.ac.uk/arrayexpress/files/E-MTAB-5061/E-MTAB-5061.sdrf.txt",
-              emtab.file)}
-
-emtab.sdrf <- read.table("Pancreas/RawData/E-MTAB-5061.sdrf.txt",
-                         h=TRUE, sep="\t", stringsAsFactors=FALSE)
-
-# construct the appropriate meta data columns, i.e. donor, plate, protocol, study
+# Reading in the metadata and constructing the appropriate meta data columns, i.e. donor, plate, protocol, study
+emtab.sdrf <- read.delim("raw_data/E-MTAB-5061.sdrf.txt", stringsAsFactors=FALSE)
 emtab.meta <- emtab.sdrf[, c("Assay.Name", "Characteristics.cell.type.", "Characteristics.individual.")]
 colnames(emtab.meta) <- c("Sample", "CellType", "Donor")
 emtab.meta$Study <- "E-MTAB-5061"
 emtab.meta$Protocol <- "SmartSeq2"
 
-# remove the marked low quality cells
-remove.cells <- unique(emtab.sdrf$Assay.Name[emtab.sdrf$Characteristics.single.cell.well.quality. == "low quality cell"])
-emtab5061.df <- emtab5061.df[, !colnames(emtab5061.df) %in% remove.cells]
-emtab.meta <- emtab.meta[!emtab.meta$Sample %in% remove.cells, ]
-rownames(emtab.meta) <- emtab.meta$Sample
-
-emtab.meta$CellType <- gsub(emtab.meta$CellType,
-                            pattern=" cell", replacement="")
-
+# Editing the cell type labels.
+emtab.meta$CellType <- gsub(" cell", "", emtab.meta$CellType)
 emtab.meta$CellType <- paste(toupper(substr(emtab.meta$CellType, 1, 1)),
-                             substr(emtab.meta$CellType, 2, nchar(emtab.meta$CellType)), sep="")
+                             substring(emtab.meta$CellType, 2), sep="")
 
-write.table(emtab.meta,
-            file="Pancreas/Data/E-MTAB-5061_metadata.tsv",
-            sep="\t", quote=FALSE, row.names=FALSE)
+# Creating a SingleCellExperiment object here.
+sce.emtab <- SingleCellExperiment(list(counts=as.matrix(emtab.df)), 
+    colData=emtab.meta[match(colnames(emtab.df), emtab.meta$Sample),])
+isSpike(sce.emtab, "ERCC") <- grep("^ERCC_", rownames(sce.emtab))
 
-# remove duplicated gene IDs and set to rownames
-emtab5061.df <- emtab5061.df[!duplicated(emtab5061.df$gene_id), ]
-rownames(emtab5061.df) <- emtab5061.df$gene_id
+# Remove the marked low quality cells
+low.qual <- emtab.sdrf$Assay.Name[emtab.sdrf$Characteristics.single.cell.well.quality. == "low quality cell"]
+sce.emtab <- sce.emtab[,!colnames(sce.emtab) %in% low.qual] 
 
-emtab5061.df <- emtab5061.df[, -1]
+# Remove more low quality cells.
+sce.emtab <- calculateQCMetrics(sce.emtab, compact=TRUE)
 
-# remove cells and genes with all 0's
-gene_sparsity <- (apply(emtab5061.df == 0, MARGIN = 1, sum)/dim(emtab5061.df)[2])
-keep_genes <- gene_sparsity < 0.9
-dim(emtab5061.df[keep_genes, ])
-emtab5061.nz <- emtab5061.df[keep_genes, ]
+discard <- isOutlier(sce.emtab$scater_qc$all$total_features_by_counts, log=TRUE, type="lower", nmads=3) |
+    isOutlier(sce.emtab$scater_qc$all$total_counts, log=TRUE, type="lower", nmads=3) |
+    isOutlier(sce.emtab$scater_qc$feature_control_ERCC$pct_counts, type="higher", nmads=3)
+sce.emtab <- sce.emtab[,!discard]
 
-cell_sparsity <- apply(emtab5061.nz == 0, MARGIN = 2, sum)/dim(emtab5061.nz)[1]
-keep_cells <- cell_sparsity < 0.8
-dim(emtab5061.nz[, keep_cells])
-emtab5061.nz <- emtab5061.nz[, keep_cells]
-emtab5061.nz <- apply(emtab5061.nz, 2, as.integer)
+# Compute normalization factors.
+set.seed(1000)
+clusters <- quickCluster(sce.emtab, min.mean=1, method="igraph")
+sce.emtab <- computeSumFactors(sce.emtab, clusters=clusters, min.mean=1)
 
-spikes <- grepl(x=rownames(emtab5061.df[keep_genes, ]), pattern="ERCC")
-sce <- SingleCellExperiment(list(counts = as.matrix(emtab5061.nz)))
-sce <- calculateQCMetrics(sce, feature_controls=list(Spikes=spikes))
-isSpike(sce) <- spikes
+sce.emtab <- computeSpikeFactors(sce.emtab, general.use=FALSE) 
+sce.emtab <- normalize(sce.emtab)
+saveRDS(file="emtab5601.rds", sce.emtab)
 
-clusters <- quickCluster(sce, min.size=120)
-sce <- computeSumFactors(sce, sizes=c(10, 20, 40, 60), positive=T,
-                         assay.type='counts', clusters=clusters)
-summary(sizeFactors((sce)))
-sce <- normalize(sce)
-emtab.norm <- data.frame(exprs(sce))
-emtab.norm$gene_id <- rownames(emtab5061.df[keep_genes, ])
-
-write.table(emtab.norm,
-            file="Pancreas/Data/E-MTAB-5061_SFnorm.tsv",
-            quote=FALSE, row.names=FALSE, sep="\t")
-
-# clear the R environment in case this script is directly sourced
+# Clear environment and invoke garbage collector.
 rm(list=ls())
 gc()
+
 
