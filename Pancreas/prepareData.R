@@ -24,7 +24,7 @@ donor.id <- sub("(D[0-9]{1,2}).*", "\\1", plate.id)
 gse81076.meta <- data.frame(Donor = donor.id, Plate=plate.id, Protocol="CELseq", Study="GSE81076")
 
 # Remove superfluous suffixes from gene IDs.
-gene.symbols <- sub("__chr[0-9]+", "", rownames(gse81076.df))
+gene.symbols <- sub("__chr([0-9XYM]+)", "", rownames(gse81076.df))
 new.names <- uniquifyFeatureNames(seq_len(nrow(gse81076.df)), gene.symbols)
 rownames(gse81076.df) <- new.names
 
@@ -45,7 +45,6 @@ sce.gse81076 <- sce.gse81076[,!discard]
 set.seed(1000)
 clusters <- quickCluster(sce.gse81076, min.mean=0.1, method="igraph")
 sce.gse81076 <- computeSumFactors(sce.gse81076, clusters=clusters, min.mean=0.1)
-summary(sizeFactors(sce))
 
 sce.gse81076 <- computeSpikeFactors(sce.gse81076)
 sce.gse81076 <- normalize(sce.gse81076)
@@ -60,80 +59,47 @@ gc()
 ##############
 
 # Download file from GEO.
-gse85241 <- 'GSE85241_cellsystems_dataset_4donors_updated.csv'
+gse85241 <- 'GSE85241_cellsystems_dataset_4donors_updated.csv.gz'
 if (!file.exists(gse85241)) { 
     download.file("ftp://ftp.ncbi.nlm.nih.gov/geo/series/GSE85nnn/GSE85241/suppl/GSE85241%5Fcellsystems%5Fdataset%5F4donors%5Fupdated%2Ecsv%2Egz", gse85241)
 }
-gse85241.df <- readSparseCounts(gse85241)
+gse85241.df <- readSparseCounts(gse85241, quote='"')
 
-gse85241.df <- read.table(gse85241, sep='\t', h=T, stringsAsFactors=F)
-gse85241.df$gene_id <- rownames(gse85241.df)
+# Construct the meta data from the cell names.
+plate.id <- sub("_.*", "", colnames(gse85241.df))
+donor.id <- sub("-.*", "", plate.id)
+gse85241.meta <- data.frame(Donor = donor.id, Plate=plate.id, Protocol="CELseq2", Study="GSE85241")
 
-# gene IDs are located in column X for these data
-colnames(gse85241.df) <- gsub(colnames(gse85241.df), pattern="X",
-                              replacement="gene_id")
+# Remove superfluous suffixes from gene IDs.
+gene.symbols <- sub("__chr([0-9XYM]+)", "", rownames(gse85241.df))
+new.names <- uniquifyFeatureNames(seq_len(nrow(gse85241.df)), gene.symbols)
+rownames(gse85241.df) <- new.names
 
-donor.id <-unlist(lapply(strsplit(colnames(gse85241.df)[1:(dim(gse85241.df)[2]-1)],
-                                  fixed=T, split="."), 
-                         FUN=function(x) paste0(x[1])))
+# Create a SingleCellExperiment object.
+sce.gse85241 <- SingleCellExperiment(list(counts=gse85241.df), 
+    colData=gse85241.meta, rowData=DataFrame(Symbol=gene.symbols))
+isSpike(sce.gse85241, "ERCC") <- grep("^ERCC-[0-9]*$", rownames(sce.gse85241))
 
-plate.id <- unlist(lapply(strsplit(colnames(gse85241.df)[1:(dim(gse85241.df)[2]-1)],
-                                   fixed=T, split="."),
-                          FUN=function(x) paste0(x[2])))
+# Remove low-quality cells.
+sce.gse85241 <- calculateQCMetrics(sce.gse85241, compact=TRUE)
 
-protocol.id <- rep('CELseq2', dim(gse85241.df)[2]-1)
-study.id <- rep('GSE85241', dim(gse85241.df)[2]-1)
+discard <- isOutlier(sce.gse85241$scater_qc$all$total_features_by_counts, log=TRUE, type="lower", nmads=3) |
+    isOutlier(sce.gse85241$scater_qc$all$total_counts, log=TRUE, type="lower", nmads=3) |
+    isOutlier(sce.gse85241$scater_qc$feature_control_ERCC$pct_counts, type="higher", nmads=3)
+sce.gse85241 <- sce.gse85241[,!discard]
 
-gse85241.meta <- data.frame(list('Donor' = donor.id,
-                                 'Plate'= plate.id,
-                                 'Protocol' = protocol.id,
-                                 'Study' = study.id,
-                                 'Sample' = colnames(gse85241.df)[1:(dim(gse85241.df)[2]-1)]))
+# Compute normalization factors.
+set.seed(1000)
+clusters <- quickCluster(sce.gse85241, min.mean=0.1, method="igraph")
+sce.gse85241 <- computeSumFactors(sce.gse85241, clusters=clusters, min.mean=0.1)
 
-rownames(gse85241.meta) <- colnames(gse85241.df)[1:(dim(gse85241.df)[2]-1)]
+sce.gse85241 <- computeSpikeFactors(sce.gse85241)
+sce.gse85241 <- normalize(sce.gse85241)
+saveRDS(file="gse85241.rds", sce.gse85241)
 
-write.table(gse85241.meta,
-            file="Pancreas/Data/GSE85241_metadata.tsv",
-            sep="\t", quote=FALSE, row.names=FALSE)
-
-# set gene IDs as rownames, remove gene ID column
-# remove duplicated gene IDs
-
-gse85241.df$gene_id <- gsub(gse85241.df$gene_id,
-                            pattern="__chr[0-9X]+", replacement="")
-gse85241.df <- gse85241.df[!duplicated(gse85241.df$gene_id), ]
-rownames(gse85241.df) <- gse85241.df$gene_id
-gse85241.df <- gse85241.df[, 1:(dim(gse85241.df)[2]-1)]
-
-# remove cells and genes with all 0's
-gene_sparsity <- (apply(gse85241.df == 0, MARGIN = 1, sum)/dim(gse85241.df)[2])
-keep_genes <- gene_sparsity < 0.9
-gse85241.nz <- gse85241.df[keep_genes, ]
-
-cell_sparsity <- apply(gse85241.nz == 0, MARGIN = 2, sum)/dim(gse85241.nz)[1]
-keep_cells <- cell_sparsity < 0.8
-dim(gse85241.nz[, keep_cells])
-gse85241.nz <- gse85241.nz[, keep_cells]
-gse85241.nz <- apply(gse85241.nz, 2, as.integer)
-
-spikes <- grepl(rownames(gse85241.df[keep_genes, ]),
-                pattern='ERCC')
-sce <- SingleCellExperiment(list(counts = as.matrix(gse85241.nz)))
-sce <- calculateQCMetrics(sce, feature_controls=list(Spikes=spikes))
-isSpike(sce) <- spikes
-
-clusters <- quickCluster(sce, get.spikes=TRUE, min.size=120)
-sce <- computeSumFactors(sce, sizes=c(10, 20, 40, 60), positive=T,
-                         assay.type='counts', clusters=clusters)
-summary(sizeFactors(sce))
-
-sce <- normalize(sce)
-gse85241.norm <- data.frame(exprs(sce))
-gse85241.norm$gene_id <- rownames(gse85241.df[keep_genes, ])
-
-write.table(gse85241.norm, sep='\t',
-            file='Pancreas/Data/GSE85241_SFnorm.tsv',
-            quote=F, row.names=F, col.names=T)
+# Clear environment and invoke garbage collector
+rm(list=ls())
+gc()
 
 ##############
 ## GSE86473 ##
