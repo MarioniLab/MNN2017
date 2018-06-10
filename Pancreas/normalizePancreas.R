@@ -1,3 +1,4 @@
+# this script is designed to run on linux and mac only, system calls to windows will fail(!)
 # sourcing or executing this script in an open R session will generate the normalized gene expression
 # matrices used for batch correction, along with the appropriate meta data for each study.
 
@@ -10,61 +11,95 @@ library(SingleCellExperiment)
 ##############
 ## GSE81076 ##
 ##############
-
-# Download file from GEO.
+# download file from GEO
 gse81076 <- 'GSE81076_D2_3_7_10_17.txt.gz'
-if (!file.exists(gse81076)) { 
-    download.file("ftp://ftp.ncbi.nlm.nih.gov/geo/series/GSE81nnn/GSE81076/suppl/GSE81076%5FD2%5F3%5F7%5F10%5F17%2Etxt%2Egz", gse81076)
-}
-gse81076.df <- readSparseCounts(gse81076)
+if (!file.exists(gse81076)) { download.file("ftp://ftp.ncbi.nlm.nih.gov/geo/series/GSE81nnn/GSE81076/suppl/GSE81076%5FD2%5F3%5F7%5F10%5F17%2Etxt%2Egz", 
+                                            gse81076)}
+gse81076.df <- read.table(gse81076, sep='\t', h=T, stringsAsFactors=F)
+gse81076.ndim <- dim(gse81076.df)[2]
 
-# Construct the meta data from the cell names.
-plate.id <- sub("_.*", "", colnames(gse81076.df))
-donor.id <- sub("(D[0-9]{1,2}).*", "\\1", plate.id)
-gse81076.meta <- data.frame(Donor = donor.id, Plate=plate.id, Protocol="CELseq", Study="GSE81076")
+# construct the meta data from the cell names
+donor.names <- unlist(regmatches(colnames(gse81076.df)[2:gse81076.ndim],
+                                 gregexpr(pattern="D[0-9]{1,2}", 
+                                          colnames(gse81076.df)[2:gse81076.ndim])))
 
-# Remove superfluous suffixes from gene IDs.
-gene.symbols <- sub("__chr[0-9]+", "", rownames(gse81076.df))
-new.names <- uniquifyFeatureNames(seq_len(nrow(gse81076.df)), gene.symbols)
-rownames(gse81076.df) <- new.names
+plate.id <- unlist(lapply(strsplit(unlist(lapply(strsplit(head(colnames(gse81076.df)[2:gse81076.ndim]),
+                                                          split="D[0-9]{1,2}", perl=T), 
+                                                 FUN=function(x) paste0(x[2]))),
+                                   fixed=T, split="_"),
+                          FUN=function(c) paste0(c[1])))
 
-# Create a SingleCellExperiment object.
-sce.gse81076 <- SingleCellExperiment(list(counts=gse81076.df), 
-    colData=gse81076.meta, rowData=DataFrame(Symbol=gene.symbols))
-isSpike(sce.gse81076, "ERCC") <- grep("^ERCC-[0-9]*$", rownames(sce.gse81076))
+protocol.id <- rep('CELseq', gse81076.ndim-1)
+study.id <- rep('GSE81076', gse81076.ndim-1)
+gse81076.meta <- data.frame(list('Donor' = donor.names,
+                                 'Plate' = plate.id,
+                                 'Protocol' = protocol.id,
+                                 'Study' = study.id,
+                                 'Sample' = colnames(gse81076.df)[2:gse81076.ndim]))
+rownames(gse81076.meta) <- colnames(gse81076.df)[2:gse81076.ndim]
+colnames(gse81076.df) <- gsub(colnames(gse81076.df), pattern='X', replacement='gene')
 
-# Remove low-quality cells.
-sce.gse81076 <- calculateQCMetrics(sce.gse81076, compact=TRUE)
+# remove superfluous suffixes from gene IDs
+gse81076.df$gene <- gsub(gse81076.df$gene,
+                         pattern="__chr[0-9]+", replacement="")
+# remove the duplicated gene names
+gse81076.df <- gse81076.df[!duplicated(gse81076.df$gene), ]
 
-discard <- isOutlier(sce.gse81076$scater_qc$all$total_features_by_counts, log=TRUE, type="lower", nmads=3) |
-    isOutlier(sce.gse81076$scater_qc$all$total_counts, log=TRUE, type="lower", nmads=3) |
-    isOutlier(sce.gse81076$scater_qc$feature_control_ERCC$pct_counts, type="higher", nmads=3)
-sce.gse81076 <- sce.gse81076[,!discard]
+rownames(gse81076.df) <- gse81076.df$gene
 
-# Compute normalization factors.
-set.seed(1000)
-clusters <- quickCluster(sce.gse81076, min.mean=0.1, method="igraph")
-sce.gse81076 <- computeSumFactors(sce.gse81076, clusters=clusters, min.mean=0.1)
+# remove the gene ID column for downstream normalization
+gse81076.df <- gse81076.df[, -1]
+
+# remove cells and genes with all 0's
+gene_sparsity <- (apply(gse81076.df == 0, MARGIN = 1, sum)/dim(gse81076.df)[2])
+keep_genes <- gene_sparsity < 0.9
+gse81076.nz <- gse81076.df[keep_genes, ]
+
+cell_sparsity <- apply(gse81076.nz == 0, MARGIN = 2, sum)/dim(gse81076.nz)[1]
+keep_cells <- cell_sparsity < 0.8
+gse81076.nz <- gse81076.nz[, keep_cells]
+gse81076.nz <- apply(gse81076.nz, 2, as.integer)
+
+# use the spike in genes to estimate size factors for normalization
+# all values show be non-negative integers
+spikes <- grepl(rownames(gse81076.df[keep_genes, ]),
+                pattern='ERCC')
+
+sce <- SingleCellExperiment(list(counts = as.matrix(gse81076.nz)))
+sce <- calculateQCMetrics(sce, feature_controls=list(Spikes=spikes))
+isSpike(sce) <- spikes
+
+clusters <- quickCluster(sce, get.spikes=TRUE, min.size=120)
+sce <- computeSumFactors(sce, sizes=c(10, 20, 40, 60), positive=T,
+                         assay.type='counts', clusters=clusters)
 summary(sizeFactors(sce))
+sce <- normalize(sce)
 
-sce.gse81076 <- computeSpikeFactors(sce.gse81076)
-sce.gse81076 <- normalize(sce.gse81076)
-saveRDS(file="gse81076.rds", sce.gse81076)
+gse81076.norm <- data.frame(exprs(sce))
 
-# Clear environment and invoke garbage collector
-rm(list=ls())
-gc()
+gse81076.norm$gene_id <- rownames(gse81076.df[keep_genes, ])
+gse81076.norm$gene_id <- gsub(gse81076.norm$gene_id,
+                              pattern="__chr[0-9X]+", replacement="")
+
+write.table(gse81076.norm, sep='\t',
+             file='Pancreas/Data/GSE81076_SFnorm.tsv',
+             quote=FALSE, row.names=FALSE, col.names=TRUE)
+
+write.table(gse81076.meta, sep="\t",
+            file="Pancreas/Data/GSE81076_metadata.tsv",
+            quote=FALSE, row.names=F, col.names=TRUE)
+
 
 ##############
 ## GSE85241 ##
 ##############
+# clear environment and invoke garbage collector
+rm(list=ls())
+gc()
 
-# Download file from GEO.
 gse85241 <- 'GSE85241_cellsystems_dataset_4donors_updated.csv'
-if (!file.exists(gse85241)) { 
-    download.file("ftp://ftp.ncbi.nlm.nih.gov/geo/series/GSE85nnn/GSE85241/suppl/GSE85241%5Fcellsystems%5Fdataset%5F4donors%5Fupdated%2Ecsv%2Egz", gse85241)
-}
-gse85241.df <- readSparseCounts(gse85241)
+if (!file.exists(gse85241)) { download.file("ftp://ftp.ncbi.nlm.nih.gov/geo/series/GSE85nnn/GSE85241/suppl/GSE85241%5Fcellsystems%5Fdataset%5F4donors%5Fupdated%2Ecsv%2Egz", 
+                                            gse85241)}
 
 gse85241.df <- read.table(gse85241, sep='\t', h=T, stringsAsFactors=F)
 gse85241.df$gene_id <- rownames(gse85241.df)
