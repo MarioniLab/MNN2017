@@ -35,16 +35,27 @@ sce.gse81076 <- calculateQCMetrics(sce.gse81076, compact=TRUE)
 discard <- isOutlier(sce.gse81076$scater_qc$all$total_features_by_counts, log=TRUE, type="lower", nmads=3) |
     isOutlier(sce.gse81076$scater_qc$all$total_counts, log=TRUE, type="lower", nmads=3) |
     isOutlier(sce.gse81076$scater_qc$feature_control_ERCC$pct_counts, type="higher", nmads=3)
+##summary(discard)
 sce.gse81076 <- sce.gse81076[,!discard]
 
 # Compute normalization factors.
 set.seed(1000)
 clusters <- quickCluster(sce.gse81076, min.mean=0.1, method="igraph")
+##table(clusters)
 sce.gse81076 <- computeSumFactors(sce.gse81076, clusters=clusters, min.mean=0.1)
+##summary(sizeFactors(sce.gse81076))
 
 sce.gse81076 <- computeSpikeFactors(sce.gse81076, general.use=FALSE)
 sce.gse81076 <- normalize(sce.gse81076)
-saveRDS(file="gse81076.rds", sce.gse81076)
+saveRDS(file="sce.gse81076.rds", sce.gse81076)
+
+# Detect highly variable genes.
+fit <- trendVar(sce.gse81076, block=sce.gse81076$Plate)
+dec <- decomposeVar(sce.gse81076, fit)
+##plot(dec$mean, dec$var)
+##points(fit$means, fit$vars, col="red")
+##curve(fit$trend(x), col="dodgerblue")
+saveRDS(file="dec.gse81076.rds", dec)
 
 # Clear environment and invoke garbage collector
 rm(list=ls())
@@ -79,16 +90,27 @@ sce.gse85241 <- calculateQCMetrics(sce.gse85241, compact=TRUE)
 discard <- isOutlier(sce.gse85241$scater_qc$all$total_features_by_counts, log=TRUE, type="lower", nmads=3) |
     isOutlier(sce.gse85241$scater_qc$all$total_counts, log=TRUE, type="lower", nmads=3) |
     isOutlier(sce.gse85241$scater_qc$feature_control_ERCC$pct_counts, type="higher", nmads=3)
+##summary(discard)
 sce.gse85241 <- sce.gse85241[,!discard]
 
 # Compute normalization factors.
 set.seed(1000)
 clusters <- quickCluster(sce.gse85241, min.mean=0.1, method="igraph")
+##table(clusters)
 sce.gse85241 <- computeSumFactors(sce.gse85241, clusters=clusters, min.mean=0.1)
+##summary(sizeFactors(sce.gse85241))
 
 sce.gse85241 <- computeSpikeFactors(sce.gse85241, general.use=FALSE)
 sce.gse85241 <- normalize(sce.gse85241)
-saveRDS(file="gse85241.rds", sce.gse85241)
+saveRDS(file="sce.gse85241.rds", sce.gse85241)
+
+# Detect highly variable genes.
+fit <- trendVar(sce.gse85241, block=sce.gse85241$Plate)
+dec <- decomposeVar(sce.gse85241, fit)
+##plot(dec$mean, dec$var)
+##points(fit$means, fit$vars, col="red")
+##curve(fit$trend(x), col="dodgerblue")
+saveRDS(file="dec.gse85241.rds", dec)
 
 # Clear environment and invoke garbage collector
 rm(list=ls())
@@ -143,16 +165,26 @@ sce.gse86473 <- calculateQCMetrics(sce.gse86473, compact=TRUE)
 discard <- isOutlier(sce.gse86473$scater_qc$all$total_features_by_counts, log=TRUE, type="lower", nmads=3) |
     isOutlier(sce.gse86473$scater_qc$all$total_counts, log=TRUE, type="lower", nmads=3) |
     isOutlier(sce.gse86473$scater_qc$feature_control_ERCC$pct_counts, type="higher", nmads=3)
+##summary(discard)
 sce.gse86473 <- sce.gse86473[,!discard]
 
 # Compute normalization factors.
 set.seed(1000)
 clusters <- quickCluster(sce.gse86473, min.mean=1, method="igraph")
+##table(clusters)
 sce.gse86473 <- computeSumFactors(sce.gse86473, clusters=clusters, min.mean=1)
+##summary(sizeFactors(sce.gse86473))
 
 #sce.gse86473 <- computeSpikeFactors(sce.gse86473, general.use=FALSE) # As there are actually no spike-in counts, anywhere.
 sce.gse86473 <- normalize(sce.gse86473)
-saveRDS(file="gse86473.rds", sce.gse86473)
+saveRDS(file="sce.gse86473.rds", sce.gse86473)
+
+# Detect highly variable genes (nothing obvious to block on, unfortunately).
+fit <- trendVar(sce.gse86473, use.spikes=FALSE, loess.args=list(span=0.05))
+##plot(fit$mean, fit$var)
+##curve(fit$trend(x), col="dodgerblue")
+dec <- decomposeVar(sce.gse86473, fit)
+saveRDS(file="dec.gse86473.rds", dec)
 
 # Clear environment and invoke garbage collector.
 rm(list=ls())
@@ -210,19 +242,36 @@ sce.emtab <- calculateQCMetrics(sce.emtab, compact=TRUE)
 discard <- isOutlier(sce.emtab$scater_qc$all$total_features_by_counts, log=TRUE, type="lower", nmads=3) |
     isOutlier(sce.emtab$scater_qc$all$total_counts, log=TRUE, type="lower", nmads=3) |
     isOutlier(sce.emtab$scater_qc$feature_control_ERCC$pct_counts, type="higher", nmads=3)
+##summary(discard)
 sce.emtab <- sce.emtab[,!discard]
 
 # Compute normalization factors.
 set.seed(1000)
 clusters <- quickCluster(sce.emtab, min.mean=1, method="igraph")
+##table(clusters)
 sce.emtab <- computeSumFactors(sce.emtab, clusters=clusters, min.mean=1)
+##summary(sizeFactors(sce.emtab))
 
 sce.emtab <- computeSpikeFactors(sce.emtab, general.use=FALSE) 
 sce.emtab <- normalize(sce.emtab)
-saveRDS(file="emtab5601.rds", sce.emtab)
+saveRDS(file="sce.emtab5601.rds", sce.emtab)
+
+# Detect highly variable genes.
+for.hvg <- sce.emtab[,sizeFactors(sce.emtab, "ERCC") > 0 & sce.emtab$Donor!="AZ"]
+for.hvg <- multiBlockNorm(for.hvg, for.hvg$Donor) 
+comb.out <- multiBlockVar(for.hvg, for.hvg$Donor)
+##all.donors <- unique(for.hvg$Donor)
+##par(mfrow=c(ceiling(length(all.donors)/3),3))
+##is.spike <- isSpike(for.hvg)
+##for (plate in all.donors) {
+##    cur.out <- comb.out$per.block[[plate]]
+##    plot(cur.out$mean, cur.out$total, pch=16, cex=0.6, xlab="Mean log-expression", 
+##         ylab="Variance of log-expression", main=plate)
+##    curve(metadata(cur.out)$trend(x), col="dodgerblue", lwd=2, add=TRUE)
+##    points(cur.out$mean[is.spike], cur.out$total[is.spike], col="red", pch=16)
+##}
+saveRDS(file="dec.emtab5601.rds", comb.out)
 
 # Clear environment and invoke garbage collector.
 rm(list=ls())
 gc()
-
-
