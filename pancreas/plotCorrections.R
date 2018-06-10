@@ -17,7 +17,6 @@ decD <- readRDS("dec.emtab5601.rds")
 # Keeping the top 5000 HVGs with the largest average biological component.
 rownames(decC) <- rownames(sceC) <- scater::uniquifyFeatureNames(rownames(sceC), rowData(sceC)$Symbol)
 universe <- Reduce(intersect, list(rownames(decA), rownames(decB), rownames(decC), rownames(decD)))
-
 combined.bio <- decA[universe,"bio"] + decB[universe,"bio"] + decC[universe,"bio"] + decD[universe,"bio"]
 chosen <- universe[order(combined.bio, decreasing=TRUE)[1:5000]]
 
@@ -155,17 +154,19 @@ rm(t.combat)
 gc()
 
 ######################## 
-# Performing the correction with CCA. Only using the first two batches as I don't know how to do multiple corrections.
+# Performing the correction with CCA. 
+# Only using the two batches with the cell type labels,
+# as I don't know how to do multiple corrections.
 
 library(Seurat)
-SeuA <- CreateSeuratObject(logcounts(sceA))
-SeuB <- CreateSeuratObject(logcounts(sceB))
-SeuA@meta.data$group <- "group1"
-SeuB@meta.data$group <- "group2"
+SeuC <- CreateSeuratObject(logcounts(sceC))
+SeuD <- CreateSeuratObject(logcounts(sceD))
+SeuC@meta.data$group <- "group1"
+SeuD@meta.data$group <- "group2"
 
-SeuA <- ScaleData(SeuA)
-SeuB <- ScaleData(SeuB)
-Y <- RunCCA(SeuA, SeuB, genes.use=rownames(sceA), do.normalize=FALSE)
+SeuC <- ScaleData(SeuC)
+SeuD <- ScaleData(SeuD)
+Y <- RunCCA(SeuC, SeuD, genes.use=rownames(sceA), do.normalize=FALSE)
 suppressWarnings(Y <- AlignSubspace(Y, grouping.var="group", dims.align=1:20))
 
 t.cca <- Y@dr$cca.aligned@cell.embeddings
@@ -173,8 +174,8 @@ t.cca <- Y@dr$cca.aligned@cell.embeddings
 ## Generating a t-SNE plot.
 set.seed(0)
 tsne.cca <- Rtsne(t.cca, perplexity = 30)
-plotFUN("results/tsne_cca_type.png", tsne.cca$Y, main="CCA", xlab="tSNE 1",ylab="tSNE 2")
-plotFUNb("results/tsne_cca_batch.png", tsne.cca$Y, main="CCA", xlab="tSNE 1",ylab="tSNE 2")
+plotFUN("results/tsne_cca_type.png", tsne.cca$Y, subset=(batch.id%in%c(3,4)), main="CCA", xlab="tSNE 1",ylab="tSNE 2")
+plotFUNb("results/tsne_cca_batch.png", tsne.cca$Y, subset=(batch.id %in% c(3,4)), main="CCA", xlab="tSNE 1",ylab="tSNE 2")
 
 rm(t.cca)
 gc()
@@ -183,16 +184,16 @@ gc()
 # Performing the correction with CCA, starting from the raw counts and normalizing it their way.
 
 library(Seurat)
-SeuA <- CreateSeuratObject(counts(sceA))
-SeuB <- CreateSeuratObject(counts(sceB))
-SeuA@meta.data$group <- "group1"
-SeuB@meta.data$group <- "group2"
+SeuC <- CreateSeuratObject(counts(sceC))
+SeuD <- CreateSeuratObject(counts(sceD))
+SeuC@meta.data$group <- "group1"
+SeuD@meta.data$group <- "group2"
 
-SeuA <- NormalizeData(SeuA)
-SeuB <- NormalizeData(SeuB)
-SeuA <- ScaleData(SeuA)
-SeuB <- ScaleData(SeuB)
-Y <- RunCCA(SeuA, SeuB, genes.use=rownames(sceA))
+SeuC <- NormalizeData(SeuC)
+SeuD <- NormalizeData(SeuD)
+SeuC <- ScaleData(SeuC)
+SeuD <- ScaleData(SeuD)
+Y <- RunCCA(SeuC, SeuD, genes.use=rownames(sceA))
 suppressWarnings(Y <- AlignSubspace(Y, grouping.var="group", dims.align=1:20))
 
 t.cca <- Y@dr$cca.aligned@cell.embeddings
@@ -200,8 +201,8 @@ t.cca <- Y@dr$cca.aligned@cell.embeddings
 ## Generating a t-SNE plot.
 set.seed(0)
 tsne.cca2 <- Rtsne(t.cca, perplexity = 30)
-plotFUN("results/tsne_cca2_type.png", tsne.cca2$Y, main="CCA native", xlab="tSNE 1",ylab="tSNE 2")
-plotFUNb("results/tsne_cca2_batch.png", tsne.cca2$Y, main="CCA native", xlab="tSNE 1",ylab="tSNE 2")
+plotFUN("results/tsne_cca2_type.png", tsne.cca2$Y, subset=(batch.id%in%c(3,4)), main="CCA native", xlab="tSNE 1",ylab="tSNE 2")
+plotFUNb("results/tsne_cca2_batch.png", tsne.cca2$Y, subset=(batch.id%in%c(3,4)), main="CCA native", xlab="tSNE 1",ylab="tSNE 2")
 
 rm(t.cca)
 gc()
