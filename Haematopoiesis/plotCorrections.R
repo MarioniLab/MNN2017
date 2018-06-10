@@ -112,7 +112,7 @@ gc()
 # Performing the correction with faster MNN.
 
 set.seed(1000)
-mnn.out2 <- fastMNN(logcounts(sceF), logcounts(sceA), k=20, approximate=TRUE, cos.norm.in=TRUE)
+mnn.out2 <- fastMNN(logcounts(sceF), logcounts(sceA), k=20, approximate=TRUE, cos.norm=TRUE)
 t.mnn <- mnn.out2$corrected
 
 # Generating a t-SNE plot.
@@ -125,7 +125,7 @@ gc()
 # Generating a PCA plot.
 pca.mnn <- prcomp(t.mnn[pca.retain,], rank=2)
 plotFUN("results/pca_mnn2_type.png", pca.mnn$x, subset=pca.retain, main="Fast MNN", xlab="PC 1",ylab="PC 2")
-plotFUN("results/pca_mnn2_batch.png", pca.mnn$x, subset=pca.retain, main="Fast MNN", xlab="PC 1",ylab="PC 2")
+plotFUNb("results/pca_mnn2_batch.png", pca.mnn$x, subset=pca.retain, main="Fast MNN", xlab="PC 1",ylab="PC 2")
 
 rm(t.mnn)
 gc()
