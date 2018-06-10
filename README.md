@@ -1,11 +1,14 @@
-# MNN
+# Batch correction with mutual nearest neighbours
 
-This folder contains R codes used to generate figures 1-5 in the manuscript "Correcting batch effects in single-cell RNA sequencing data by matching mutual nearest neighbours", as well as 1-6 supplementary figures.
+## Overview
+
+This repository contains the code for the paper **Correcting batch effects in single-cell RNA sequencing data by matching mutual nearest neighbours** by [Haghverdi _et al._](https://doi.org/10.1038/nbt.4091).
+
+## Regenerating the figures
 
 1. To generate the simulation figure in the main text, first run the source file `simulateBatches.R`, then run the source file `FourPlots_sim.R` in the Simulations folder.
 
-2. To generate the simulation figure in the supplement (identical composition of cell types), first run the source file `easysimulateBatches.R`, then run the source file `FourPlots_easysim.R` in the Simulations folder  
-
+2. To generate the simulation figure in the supplement (identical composition of cell types), first run the source file `easysimulateBatches.R`, then run the source file `FourPlots_easysim.R` in the Simulations folder.
 
 3. To generate the haematopoietic data figures in the main text, first run the source file `preparedata.R`, then  run the source file `FourPlots_haem.R` in the Haematopoiesis folder.
 
@@ -25,4 +28,8 @@ This folder contains R codes used to generate figures 1-5 in the manuscript "Cor
 
 11. The scripts to download and normalize the 10X droplet data can be found in `Droplet/`, specifically `pbmc_normalisation.R` for the 68,000 PBMCs and `tcell_4K_normalisation.R` for the 4,000 T cells.  Please note that trying to normalise 68,000 cells on your local machine will require a lot of resources (memory and CPU), it is recommended that the scripts in the `Droplet/` are executed on an appropriate high performance computing cluster.  The scripts to perform tSNE and cluster assignment using community detection on the uncorrected data can be performed by running `uncorrected_68k_tSNE.R`, `assign_cell_types_68kPBMC.R`.  To perform the equivalent tasks to generate the panels of Figure 5, run `combine_10X.R`, `pbmc68k_tSNE.R`, `PBMC_68k_plotting.R`, `assign_cell_types_68kPBMC_corrected.R` and `Corrected_PBMC_68K_assignCellLabels.R`
 
+## Updated analysis scripts
 
+Updated simulations and analysis scripts are provided in `simulations`, `haematopoiesis` and `pancreas`.
+These have been updated to reflect changes in the functions and packages during both data pre-processing and the correction itself.
+Any further updates will be applied to these scripts rather than the ones listed above.
