@@ -50,7 +50,7 @@ sceA <- SingleCellExperiment(list(counts=dataA))
 dim(sceA)
 
 # Only selecting cells that are in the metadata.
-metaA <- read.csv2("MAP.csv",sep=",",stringsAsFactors = FALSE, head=TRUE, row.names=1)
+metaA <- read.csv2("../Haematopoiesis/MAP.csv",sep=",",stringsAsFactors = FALSE, head=TRUE, row.names=1)
 metainds <- match(rownames(metaA), colnames(sceA))
 sceA <- sceA[,metainds]
 
@@ -90,14 +90,7 @@ sceA <- sceA[mA[keep],]
 sceF <- sceF[mF[keep],]
 rownames(sceA) <- rownames(sceF)
 
-# Adjusting the size factors against each other, assuming most of these genes are not DE between batches...
-aveA <- calcAverage(sceA)
-aveF <- calcAverage(sceF)
-sizeFactors(sceF) <- sizeFactors(sceF) * median(aveF/aveA)
-
 # Save results to file.
-sceA <- normalize(sceA, centre_size_factors=FALSE)
-sceF <- normalize(sceF, centre_size_factors=FALSE)
 saveRDS(sceA, file="haem_data_A.rds")
 saveRDS(sceF, file="haem_data_F.rds")
 

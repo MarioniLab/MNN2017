@@ -6,6 +6,10 @@ dir.create("results", showWarning=FALSE)
 sceA <- readRDS("haem_data_A.rds")
 sceF <- readRDS("haem_data_F.rds")
 
+nout <- multiBatchNorm(sceA, sceF)
+sceA <- nout[[1]]
+sceF <- nout[[2]]
+
 # Load data.
 sceF$CellType[sceF$CellType=="other"] <- "Unsorted"
 sceA$CellType[sceA$CellType=="ERY"] <- "MEP"
