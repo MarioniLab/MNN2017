@@ -51,21 +51,21 @@ runAllMethods <- function(...)
 	per.batch <- unlist(lapply(batches, FUN=ncol))
     batch.id <- rep(seq_along(batches), per.batch)
 
-    Xmnn <- do.call(mnnCorrect2, c(batches, list(cos.norm.in=FALSE, approximate=TRUE)))
+    Xmnn <- do.call(fastMNN, c(batches, list(cos.norm=FALSE, approximate=TRUE)))
     Xlm <- removeBatchEffect(uncorrected, factor(batch.id))
     Xcom <- ComBat(uncorrected, factor(batch.id), mod=NULL, prior.plots = FALSE)
 
     mat <- list(uncorrected=t(uncorrected), MNN=Xmnn$corrected, limma=t(Xlm), ComBat=t(Xcom))
 
-	if (length(batches)==2L) {
+    if (length(batches)==2L) {
         colnames(batches[[1]]) <- paste0("Cell", seq_len(ncol(batches[[1]])), "-1")
         colnames(batches[[2]]) <- paste0("Cell", seq_len(ncol(batches[[2]])), "-2")
         rownames(batches[[1]]) <- rownames(batches[[2]]) <- paste0("Gene", seq_len(nrow(batches[[1]])))
 
         Se <- CreateSeuratObject(batches[[1]])
-		Se2 <- CreateSeuratObject(batches[[2]])
-	    Se@meta.data$group <- "group1"
-	    Se2@meta.data$group <- "group2"
+        Se2 <- CreateSeuratObject(batches[[2]])
+        Se@meta.data$group <- "group1"
+        Se2@meta.data$group <- "group2"
 
         Se <- ScaleData(Se)
         Se2 <- ScaleData(Se2)
